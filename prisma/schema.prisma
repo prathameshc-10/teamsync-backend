@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Login {
+  userId     Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  fullName   String
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  organizations       Organization[]
+  user                User?
+  conversationMembers ConversationMember[]
+  sentMessages        Message[]
+
+  @@map("Login")
+}
+
+model Organization {
+  orgId     Int      @id @default(autoincrement())
+  orgName   String
+  createdAt DateTime @default(now())
+  userId    Int
+
+  login         Login          @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  users         User[]
+  conversations Conversation[]
+
+  @@map("Organization")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique
+  orgId    Int
+  isActive Boolean @default(true)
+
+  login Login        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  org   Organization @relation(fields: [orgId], references: [orgId], onDelete: Cascade)
+
+  @@map("User")
+}
+
+model Conversation {
+  conversationId Int      @id @default(autoincrement())
+  orgId          Int?
+  type           String   @default("direct")
+  createdAt      DateTime @default(now())
+
+  org      Organization?        @relation(fields: [orgId], references: [orgId], onDelete: Cascade)
+  members  ConversationMember[]
+  messages Message[]
+
+  @@map("Conversation")
+}
+
+model ConversationMember {
+  id             Int      @id @default(autoincrement())
+  conversationId Int
+  userId         Int
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+  login        Login        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("ConversationMember")
+}
+
+model Message {
+  messageId      Int      @id @default(autoincrement())
+  conversationId Int
+  senderId       Int
+  content        String
+  isDeleted      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+  sender       Login        @relation(fields: [senderId], references: [userId], onDelete: Cascade)
+
+  @@map("Message")
+}
