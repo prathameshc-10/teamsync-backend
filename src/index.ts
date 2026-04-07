@@ -1,19 +1,52 @@
+// ============================================================
+// src/index.ts  — updated to wire in Socket.IO + meeting routes
+// ============================================================
+
+import "dotenv/config";
 import express from "express";
-import "./config/env";
+import http from "http";
+import { Server as SocketServer } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
-import authRoutes from "./routes/auth.routes";
 
-dotenv.config();
+import authRoutes from "./routes/auth.routes";
+import meetingRoutes from "./routes/meeting.routes";
+import { registerMeetingSocketHandlers } from "./sockets/meeting.socket";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const httpServer = http.createServer(app); // wrap express in http.Server for Socket.IO
 
-app.use(cors({ origin: true, credentials: true }));
+// ── Socket.IO setup ──────────────────────────────────────────
+const io = new SocketServer(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  },
+});
+
+// ── Middleware ───────────────────────────────────────────────
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+// ── HTTP Routes ──────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
+app.use("/api/meetings", meetingRoutes);
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// ── Socket.IO connection handler ─────────────────────────────
+io.on("connection", (socket) => {
+  console.log(`[socket] connected: ${socket.id}`);
+
+  // Register all meeting-related socket event handlers
+  registerMeetingSocketHandlers(io, socket);
+
+  socket.on("disconnect", () => {
+    console.log(`[socket] disconnected: ${socket.id}`);
+  });
+});
+
+// ── Start server ─────────────────────────────────────────────
+const PORT = process.env.PORT || 4000;
+httpServer.listen(PORT, () => {
+  console.log(`[server] running on http://localhost:${PORT}`);
+});

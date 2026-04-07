@@ -136,3 +136,23 @@ export const USER_VALIDATION ={
   FAILED_TO_FETCH_HR: "Failed to fetch HRs",
   FAILED_TO_FETCH_MANAGER: "Failed to fetch managers" 
 } as const;
+
+export const MEETING_MESSAGES = {
+  CREATED:                "Meeting created successfully",
+  CREATE_FAILED:          "Failed to create meeting",
+  NOT_FOUND:              "Meeting not found",
+  ENDED:                  "Meeting has already ended",
+  FETCH_FAILED:           "Failed to fetch meeting",
+  FIELDS_REQUIRED:        "sourceType and sourceId are required",
+  INVALID_SOURCE_TYPE:    "sourceType must be 'channel' or 'dm'",
+  UNAUTHORIZED:           "Unauthorized",
+  USER_NOT_FOUND:         "User not found",
+ 
+  NOT_PARTICIPANT:        "You are not in this meeting",
+  PARTICIPANT_NOT_FOUND:  "Participant not found in this meeting",
+  CANNOT_REMOVE_SELF:     "Host cannot remove themselves",
+  HOST_ONLY:              "Only the host can perform this action",
+  PRESENTER_ONLY:         "Only the current presenter can perform this action",
+  NOT_PRESENTER:          "You are not the current presenter",
+  EMPTY_MESSAGE:          "Message cannot be empty",
+} as const;
