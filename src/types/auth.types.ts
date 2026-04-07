@@ -3,6 +3,7 @@
 // ============================================================
 
 import { Request } from "express";
+import { Socket } from "socket.io";
 
 export interface JwtPayload {
   userId: number;
@@ -57,4 +58,43 @@ export interface ResetPasswordBody {
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
+}
+
+export interface OnlineUser {
+  username: string;
+  socketId: string;
+}
+
+export interface SendMessagePayload {
+  conversationId: number;  // Conversation.conversationId
+  text: string;
+}
+
+
+export interface DeleteMessagePayload {
+  messageId: number;       // Message.messageId
+}
+ 
+export interface EditMessagePayload {
+  messageId: number;
+  newText: string;
+}
+ 
+export interface ReactToMessagePayload {
+  conversationId: number;
+  messageId: number;
+  emoji: string;
+}
+ 
+export interface TypingPayload {
+  conversationId: number;
+}
+ 
+export interface SendDMPayload {
+  conversationId: number;  // Conversation with type "direct"
+  text: string;
+}
+
+export interface AuthenticatedSocket extends Socket {
+  user: JwtPayload;
 }

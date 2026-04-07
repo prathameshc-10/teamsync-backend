@@ -56,7 +56,8 @@ export const ModelName = {
   User: 'User',
   Conversation: 'Conversation',
   ConversationMember: 'ConversationMember',
-  Message: 'Message'
+  Message: 'Message',
+  Reaction: 'Reaction'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -133,10 +134,22 @@ export const MessageScalarFieldEnum = {
   senderId: 'senderId',
   content: 'content',
   isDeleted: 'isDeleted',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  editedAt: 'editedAt'
 } as const
 
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
+
+export const ReactionScalarFieldEnum = {
+  reacctionId: 'reacctionId',
+  messageId: 'messageId',
+  userId: 'userId',
+  emoji: 'emoji',
+  createdAt: 'createdAt'
+} as const
+
+export type ReactionScalarFieldEnum = (typeof ReactionScalarFieldEnum)[keyof typeof ReactionScalarFieldEnum]
 
 
 export const SortOrder = {

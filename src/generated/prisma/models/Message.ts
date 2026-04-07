@@ -45,6 +45,7 @@ export type MessageMinAggregateOutputType = {
   content: string | null
   isDeleted: boolean | null
   createdAt: Date | null
+  editedAt: Date | null
 }
 
 export type MessageMaxAggregateOutputType = {
@@ -54,6 +55,7 @@ export type MessageMaxAggregateOutputType = {
   content: string | null
   isDeleted: boolean | null
   createdAt: Date | null
+  editedAt: Date | null
 }
 
 export type MessageCountAggregateOutputType = {
@@ -63,6 +65,7 @@ export type MessageCountAggregateOutputType = {
   content: number
   isDeleted: number
   createdAt: number
+  editedAt: number
   _all: number
 }
 
@@ -86,6 +89,7 @@ export type MessageMinAggregateInputType = {
   content?: true
   isDeleted?: true
   createdAt?: true
+  editedAt?: true
 }
 
 export type MessageMaxAggregateInputType = {
@@ -95,6 +99,7 @@ export type MessageMaxAggregateInputType = {
   content?: true
   isDeleted?: true
   createdAt?: true
+  editedAt?: true
 }
 
 export type MessageCountAggregateInputType = {
@@ -104,6 +109,7 @@ export type MessageCountAggregateInputType = {
   content?: true
   isDeleted?: true
   createdAt?: true
+  editedAt?: true
   _all?: true
 }
 
@@ -200,6 +206,7 @@ export type MessageGroupByOutputType = {
   content: string
   isDeleted: boolean
   createdAt: Date
+  editedAt: Date | null
   _count: MessageCountAggregateOutputType | null
   _avg: MessageAvgAggregateOutputType | null
   _sum: MessageSumAggregateOutputType | null
@@ -232,6 +239,8 @@ export type MessageWhereInput = {
   content?: Prisma.StringFilter<"Message"> | string
   isDeleted?: Prisma.BoolFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
+  editedAt?: Prisma.DateTimeNullableFilter<"Message"> | Date | string | null
+  reactions?: Prisma.ReactionListRelationFilter
   conversation?: Prisma.XOR<Prisma.ConversationScalarRelationFilter, Prisma.ConversationWhereInput>
   sender?: Prisma.XOR<Prisma.LoginScalarRelationFilter, Prisma.LoginWhereInput>
 }
@@ -243,6 +252,8 @@ export type MessageOrderByWithRelationInput = {
   content?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reactions?: Prisma.ReactionOrderByRelationAggregateInput
   conversation?: Prisma.ConversationOrderByWithRelationInput
   sender?: Prisma.LoginOrderByWithRelationInput
 }
@@ -257,6 +268,8 @@ export type MessageWhereUniqueInput = Prisma.AtLeast<{
   content?: Prisma.StringFilter<"Message"> | string
   isDeleted?: Prisma.BoolFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
+  editedAt?: Prisma.DateTimeNullableFilter<"Message"> | Date | string | null
+  reactions?: Prisma.ReactionListRelationFilter
   conversation?: Prisma.XOR<Prisma.ConversationScalarRelationFilter, Prisma.ConversationWhereInput>
   sender?: Prisma.XOR<Prisma.LoginScalarRelationFilter, Prisma.LoginWhereInput>
 }, "messageId">
@@ -268,6 +281,7 @@ export type MessageOrderByWithAggregationInput = {
   content?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.MessageCountOrderByAggregateInput
   _avg?: Prisma.MessageAvgOrderByAggregateInput
   _max?: Prisma.MessageMaxOrderByAggregateInput
@@ -285,12 +299,15 @@ export type MessageScalarWhereWithAggregatesInput = {
   content?: Prisma.StringWithAggregatesFilter<"Message"> | string
   isDeleted?: Prisma.BoolWithAggregatesFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Message"> | Date | string
+  editedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Message"> | Date | string | null
 }
 
 export type MessageCreateInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
+  reactions?: Prisma.ReactionCreateNestedManyWithoutMessageInput
   conversation: Prisma.ConversationCreateNestedOneWithoutMessagesInput
   sender: Prisma.LoginCreateNestedOneWithoutSentMessagesInput
 }
@@ -302,12 +319,16 @@ export type MessageUncheckedCreateInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
+  reactions?: Prisma.ReactionUncheckedCreateNestedManyWithoutMessageInput
 }
 
 export type MessageUpdateInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reactions?: Prisma.ReactionUpdateManyWithoutMessageNestedInput
   conversation?: Prisma.ConversationUpdateOneRequiredWithoutMessagesNestedInput
   sender?: Prisma.LoginUpdateOneRequiredWithoutSentMessagesNestedInput
 }
@@ -319,6 +340,8 @@ export type MessageUncheckedUpdateInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reactions?: Prisma.ReactionUncheckedUpdateManyWithoutMessageNestedInput
 }
 
 export type MessageCreateManyInput = {
@@ -328,12 +351,14 @@ export type MessageCreateManyInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
 }
 
 export type MessageUpdateManyMutationInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type MessageUncheckedUpdateManyInput = {
@@ -343,6 +368,7 @@ export type MessageUncheckedUpdateManyInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type MessageListRelationFilter = {
@@ -362,6 +388,7 @@ export type MessageCountOrderByAggregateInput = {
   content?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrder
 }
 
 export type MessageAvgOrderByAggregateInput = {
@@ -377,6 +404,7 @@ export type MessageMaxOrderByAggregateInput = {
   content?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrder
 }
 
 export type MessageMinOrderByAggregateInput = {
@@ -386,12 +414,18 @@ export type MessageMinOrderByAggregateInput = {
   content?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  editedAt?: Prisma.SortOrder
 }
 
 export type MessageSumOrderByAggregateInput = {
   messageId?: Prisma.SortOrder
   conversationId?: Prisma.SortOrder
   senderId?: Prisma.SortOrder
+}
+
+export type MessageScalarRelationFilter = {
+  is?: Prisma.MessageWhereInput
+  isNot?: Prisma.MessageWhereInput
 }
 
 export type MessageCreateNestedManyWithoutSenderInput = {
@@ -478,10 +512,30 @@ export type MessageUncheckedUpdateManyWithoutConversationNestedInput = {
   deleteMany?: Prisma.MessageScalarWhereInput | Prisma.MessageScalarWhereInput[]
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
+export type MessageCreateNestedOneWithoutReactionsInput = {
+  create?: Prisma.XOR<Prisma.MessageCreateWithoutReactionsInput, Prisma.MessageUncheckedCreateWithoutReactionsInput>
+  connectOrCreate?: Prisma.MessageCreateOrConnectWithoutReactionsInput
+  connect?: Prisma.MessageWhereUniqueInput
+}
+
+export type MessageUpdateOneRequiredWithoutReactionsNestedInput = {
+  create?: Prisma.XOR<Prisma.MessageCreateWithoutReactionsInput, Prisma.MessageUncheckedCreateWithoutReactionsInput>
+  connectOrCreate?: Prisma.MessageCreateOrConnectWithoutReactionsInput
+  upsert?: Prisma.MessageUpsertWithoutReactionsInput
+  connect?: Prisma.MessageWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.MessageUpdateToOneWithWhereWithoutReactionsInput, Prisma.MessageUpdateWithoutReactionsInput>, Prisma.MessageUncheckedUpdateWithoutReactionsInput>
+}
+
 export type MessageCreateWithoutSenderInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
+  reactions?: Prisma.ReactionCreateNestedManyWithoutMessageInput
   conversation: Prisma.ConversationCreateNestedOneWithoutMessagesInput
 }
 
@@ -491,6 +545,8 @@ export type MessageUncheckedCreateWithoutSenderInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
+  reactions?: Prisma.ReactionUncheckedCreateNestedManyWithoutMessageInput
 }
 
 export type MessageCreateOrConnectWithoutSenderInput = {
@@ -529,12 +585,15 @@ export type MessageScalarWhereInput = {
   content?: Prisma.StringFilter<"Message"> | string
   isDeleted?: Prisma.BoolFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
+  editedAt?: Prisma.DateTimeNullableFilter<"Message"> | Date | string | null
 }
 
 export type MessageCreateWithoutConversationInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
+  reactions?: Prisma.ReactionCreateNestedManyWithoutMessageInput
   sender: Prisma.LoginCreateNestedOneWithoutSentMessagesInput
 }
 
@@ -544,6 +603,8 @@ export type MessageUncheckedCreateWithoutConversationInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
+  reactions?: Prisma.ReactionUncheckedCreateNestedManyWithoutMessageInput
 }
 
 export type MessageCreateOrConnectWithoutConversationInput = {
@@ -572,18 +633,75 @@ export type MessageUpdateManyWithWhereWithoutConversationInput = {
   data: Prisma.XOR<Prisma.MessageUpdateManyMutationInput, Prisma.MessageUncheckedUpdateManyWithoutConversationInput>
 }
 
+export type MessageCreateWithoutReactionsInput = {
+  content: string
+  isDeleted?: boolean
+  createdAt?: Date | string
+  editedAt?: Date | string | null
+  conversation: Prisma.ConversationCreateNestedOneWithoutMessagesInput
+  sender: Prisma.LoginCreateNestedOneWithoutSentMessagesInput
+}
+
+export type MessageUncheckedCreateWithoutReactionsInput = {
+  messageId?: number
+  conversationId: number
+  senderId: number
+  content: string
+  isDeleted?: boolean
+  createdAt?: Date | string
+  editedAt?: Date | string | null
+}
+
+export type MessageCreateOrConnectWithoutReactionsInput = {
+  where: Prisma.MessageWhereUniqueInput
+  create: Prisma.XOR<Prisma.MessageCreateWithoutReactionsInput, Prisma.MessageUncheckedCreateWithoutReactionsInput>
+}
+
+export type MessageUpsertWithoutReactionsInput = {
+  update: Prisma.XOR<Prisma.MessageUpdateWithoutReactionsInput, Prisma.MessageUncheckedUpdateWithoutReactionsInput>
+  create: Prisma.XOR<Prisma.MessageCreateWithoutReactionsInput, Prisma.MessageUncheckedCreateWithoutReactionsInput>
+  where?: Prisma.MessageWhereInput
+}
+
+export type MessageUpdateToOneWithWhereWithoutReactionsInput = {
+  where?: Prisma.MessageWhereInput
+  data: Prisma.XOR<Prisma.MessageUpdateWithoutReactionsInput, Prisma.MessageUncheckedUpdateWithoutReactionsInput>
+}
+
+export type MessageUpdateWithoutReactionsInput = {
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  conversation?: Prisma.ConversationUpdateOneRequiredWithoutMessagesNestedInput
+  sender?: Prisma.LoginUpdateOneRequiredWithoutSentMessagesNestedInput
+}
+
+export type MessageUncheckedUpdateWithoutReactionsInput = {
+  messageId?: Prisma.IntFieldUpdateOperationsInput | number
+  conversationId?: Prisma.IntFieldUpdateOperationsInput | number
+  senderId?: Prisma.IntFieldUpdateOperationsInput | number
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
 export type MessageCreateManySenderInput = {
   messageId?: number
   conversationId: number
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
 }
 
 export type MessageUpdateWithoutSenderInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reactions?: Prisma.ReactionUpdateManyWithoutMessageNestedInput
   conversation?: Prisma.ConversationUpdateOneRequiredWithoutMessagesNestedInput
 }
 
@@ -593,6 +711,8 @@ export type MessageUncheckedUpdateWithoutSenderInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reactions?: Prisma.ReactionUncheckedUpdateManyWithoutMessageNestedInput
 }
 
 export type MessageUncheckedUpdateManyWithoutSenderInput = {
@@ -601,6 +721,7 @@ export type MessageUncheckedUpdateManyWithoutSenderInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type MessageCreateManyConversationInput = {
@@ -609,12 +730,15 @@ export type MessageCreateManyConversationInput = {
   content: string
   isDeleted?: boolean
   createdAt?: Date | string
+  editedAt?: Date | string | null
 }
 
 export type MessageUpdateWithoutConversationInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reactions?: Prisma.ReactionUpdateManyWithoutMessageNestedInput
   sender?: Prisma.LoginUpdateOneRequiredWithoutSentMessagesNestedInput
 }
 
@@ -624,6 +748,8 @@ export type MessageUncheckedUpdateWithoutConversationInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reactions?: Prisma.ReactionUncheckedUpdateManyWithoutMessageNestedInput
 }
 
 export type MessageUncheckedUpdateManyWithoutConversationInput = {
@@ -632,8 +758,38 @@ export type MessageUncheckedUpdateManyWithoutConversationInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  editedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
+
+/**
+ * Count Type MessageCountOutputType
+ */
+
+export type MessageCountOutputType = {
+  reactions: number
+}
+
+export type MessageCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  reactions?: boolean | MessageCountOutputTypeCountReactionsArgs
+}
+
+/**
+ * MessageCountOutputType without action
+ */
+export type MessageCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MessageCountOutputType
+   */
+  select?: Prisma.MessageCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * MessageCountOutputType without action
+ */
+export type MessageCountOutputTypeCountReactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ReactionWhereInput
+}
 
 
 export type MessageSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -643,8 +799,11 @@ export type MessageSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   content?: boolean
   isDeleted?: boolean
   createdAt?: boolean
+  editedAt?: boolean
+  reactions?: boolean | Prisma.Message$reactionsArgs<ExtArgs>
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
   sender?: boolean | Prisma.LoginDefaultArgs<ExtArgs>
+  _count?: boolean | Prisma.MessageCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["message"]>
 
 export type MessageSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -654,6 +813,7 @@ export type MessageSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   content?: boolean
   isDeleted?: boolean
   createdAt?: boolean
+  editedAt?: boolean
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
   sender?: boolean | Prisma.LoginDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["message"]>
@@ -665,6 +825,7 @@ export type MessageSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   content?: boolean
   isDeleted?: boolean
   createdAt?: boolean
+  editedAt?: boolean
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
   sender?: boolean | Prisma.LoginDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["message"]>
@@ -676,12 +837,15 @@ export type MessageSelectScalar = {
   content?: boolean
   isDeleted?: boolean
   createdAt?: boolean
+  editedAt?: boolean
 }
 
-export type MessageOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"messageId" | "conversationId" | "senderId" | "content" | "isDeleted" | "createdAt", ExtArgs["result"]["message"]>
+export type MessageOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"messageId" | "conversationId" | "senderId" | "content" | "isDeleted" | "createdAt" | "editedAt", ExtArgs["result"]["message"]>
 export type MessageInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  reactions?: boolean | Prisma.Message$reactionsArgs<ExtArgs>
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
   sender?: boolean | Prisma.LoginDefaultArgs<ExtArgs>
+  _count?: boolean | Prisma.MessageCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MessageIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
@@ -695,6 +859,7 @@ export type MessageIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 export type $MessagePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Message"
   objects: {
+    reactions: Prisma.$ReactionPayload<ExtArgs>[]
     conversation: Prisma.$ConversationPayload<ExtArgs>
     sender: Prisma.$LoginPayload<ExtArgs>
   }
@@ -705,6 +870,7 @@ export type $MessagePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     content: string
     isDeleted: boolean
     createdAt: Date
+    editedAt: Date | null
   }, ExtArgs["result"]["message"]>
   composites: {}
 }
@@ -1099,6 +1265,7 @@ readonly fields: MessageFieldRefs;
  */
 export interface Prisma__MessageClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  reactions<T extends Prisma.Message$reactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Message$reactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   conversation<T extends Prisma.ConversationDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ConversationDefaultArgs<ExtArgs>>): Prisma.Prisma__ConversationClient<runtime.Types.Result.GetResult<Prisma.$ConversationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   sender<T extends Prisma.LoginDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.LoginDefaultArgs<ExtArgs>>): Prisma.Prisma__LoginClient<runtime.Types.Result.GetResult<Prisma.$LoginPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
@@ -1136,6 +1303,7 @@ export interface MessageFieldRefs {
   readonly content: Prisma.FieldRef<"Message", 'String'>
   readonly isDeleted: Prisma.FieldRef<"Message", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Message", 'DateTime'>
+  readonly editedAt: Prisma.FieldRef<"Message", 'DateTime'>
 }
     
 
@@ -1534,6 +1702,30 @@ export type MessageDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Messages to delete.
    */
   limit?: number
+}
+
+/**
+ * Message.reactions
+ */
+export type Message$reactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Reaction
+   */
+  select?: Prisma.ReactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Reaction
+   */
+  omit?: Prisma.ReactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ReactionInclude<ExtArgs> | null
+  where?: Prisma.ReactionWhereInput
+  orderBy?: Prisma.ReactionOrderByWithRelationInput | Prisma.ReactionOrderByWithRelationInput[]
+  cursor?: Prisma.ReactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ReactionScalarFieldEnum | Prisma.ReactionScalarFieldEnum[]
 }
 
 /**
