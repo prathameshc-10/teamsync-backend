@@ -8,10 +8,11 @@ import jwt from "jsonwebtoken";
 
 import authRoutes from "./routes/auth.routes";
 import meetingRoutes from "./routes/meeting.routes";
-import { registerSocketHandlers } from "./socket/socketHandler";
+import { registerSocketHandlers } from "./sockets/socketHandler";
 import { registerMeetingSocketHandlers } from "./sockets/meeting.socket";
 import { JWT_CONFIG } from "./config/jwt.config";
 import type { AuthenticatedSocket, JwtPayload } from "./types/auth.types";
+import conversationRoutes from "./routes/conversation.routes";
 
 const app = express();
 const httpServer = createServer(app);
@@ -33,6 +34,7 @@ app.use(cookieParser());
 // ── HTTP Routes ──────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/meetings", meetingRoutes);
+app.use("/api/conversations", conversationRoutes);
 
 // ── Socket.IO JWT Middleware ─────────────────────────────────
 io.use((socket, next) => {

@@ -6,7 +6,7 @@ import {
   deleteMessage,
   toggleReaction,
   isConversationMember,
-} from "../lib/db";
+} from "./db";
 
 // ─── In-memory presence (never persisted to DB) ───────────────────────────────
 // Only transient state lives here — online users, typing indicators.

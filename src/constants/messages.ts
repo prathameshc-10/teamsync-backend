@@ -156,3 +156,14 @@ export const MEETING_MESSAGES = {
   NOT_PRESENTER:          "You are not the current presenter",
   EMPTY_MESSAGE:          "Message cannot be empty",
 } as const;
+
+export const CONVERSATION_MESSAGES = {
+  NOT_A_MEMBER: "You are not a member of this conversation",
+  ALREADY_A_MEMBER: "User is already a member",
+  UNAUTHORIZED: "Unauthorized",
+  MEMBERS_REQUIRED: "memberUserIds array is required",
+  FAILED_TO_CREATE:  "Failed to create conversation",
+  USERID_REQUIRED: "userId is required",
+  FAILED_TO_ADD: "Failed to add member",
+  FAILED_TO_FETCH: "Failed to fetch conversations"
+} as const;
