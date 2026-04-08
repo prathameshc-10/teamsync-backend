@@ -8,7 +8,7 @@ import http from "http";
 import { Server as SocketServer } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import organizationRoutes from "../src/routes/organization.routes"; 
+import organizationRoutes from "./routes/organization.routes"; 
 import authRoutes from "./routes/auth.routes";
 import meetingRoutes from "./routes/meeting.routes";
 import { registerMeetingSocketHandlers } from "./sockets/meeting.socket";

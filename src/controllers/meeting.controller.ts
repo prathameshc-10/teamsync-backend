@@ -1,54 +1,119 @@
-import { Response } from 'express';
-import * as orgService from '../services/organization.services';
-import { AuthRequest, CreateOrganizationBody, AddMemberBody, OrgParams } from '../types/organization.types';
+// ============================================================
+// src/controllers/meeting.controller.ts
+// HTTP endpoints: create meeting, get meeting info.
+// Real-time events are handled by meeting.socket.ts
+// ============================================================
 
-export const createOrganization = async (req: AuthRequest, res: Response): Promise<void> => {
+import { Response } from "express";
+import * as MeetingService from "../services/meeting.service";
+import type { AuthRequest, CreateMeetingBody } from "../types/meeting.types";
+import { MEETING_MESSAGES } from "../constants/messages";
+import prisma from "../config/prisma";
+
+// ================================================================
+// createMeeting  POST /api/meetings
+// Any authenticated user can start a meeting from a channel or DM.
+// Returns the meeting link to share with others.
+// ================================================================
+export async function createMeeting(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { orgName } = req.body as CreateOrganizationBody;
-    if (!orgName) {
-      res.status(400).json({ error: 'Organization name is required' });
+    if (!req.user) {
+      res.status(401).json({ success: false, message: MEETING_MESSAGES.UNAUTHORIZED });
       return;
     }
 
-    const org = await orgService.createOrganization(orgName, req.user!.userId);
-    res.status(201).json(org);
-  } catch (err: any) {
-    res.status(err.status || 500).json({ error: err.message });
-  }
-};
+    const { sourceType, sourceId } = req.body as CreateMeetingBody;
 
-export const getMyOrganizations = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const orgs = await orgService.getMyOrganizations(req.user!.userId);
-    res.json(orgs);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const getMembers = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { orgId } = req.params as unknown as OrgParams;
-    const members = await orgService.getMembers(parseInt(orgId));
-    res.json(members);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const addMember = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { userId } = req.body as AddMemberBody;
-    const { orgId } = req.params as unknown as OrgParams;
-
-    if (!userId) {
-      res.status(400).json({ error: 'userId is required' });
+    if (!sourceType || !sourceId) {
+      res.status(400).json({ success: false, message: MEETING_MESSAGES.FIELDS_REQUIRED });
       return;
     }
 
-    const user = await orgService.addMember(parseInt(orgId), userId);
-    res.status(201).json(user);
-  } catch (err: any) {
-    res.status(err.status || 500).json({ error: err.message });
+    if (sourceType !== "channel" && sourceType !== "dm") {
+      res.status(400).json({ success: false, message: MEETING_MESSAGES.INVALID_SOURCE_TYPE });
+      return;
+    }
+
+    // Fetch host's full name
+    const login = await prisma.login.findUnique({
+      where: { userId: req.user.userId },
+    });
+    if (!login) {
+      res.status(404).json({ success: false, message: MEETING_MESSAGES.USER_NOT_FOUND });
+      return;
+    }
+
+    const meeting = MeetingService.createMeeting(
+      req.user.userId,
+      login.fullName,
+      sourceType,
+      sourceId
+    );
+
+    res.status(201).json({
+      success: true,
+      message: MEETING_MESSAGES.CREATED,
+      data: MeetingService.toMeetingResponse(meeting),
+    });
+
+  } catch (err) {
+    const message = err instanceof Error ? err.message : MEETING_MESSAGES.CREATE_FAILED;
+    res.status(500).json({ success: false, message });
   }
-};
+}
+
+// ================================================================
+// getMeeting  GET /api/meetings/:meetingId
+// Returns public meeting info (status, participant count, link).
+// Used by clients to validate a meeting link before joining.
+// ================================================================
+export async function getMeeting(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: MEETING_MESSAGES.UNAUTHORIZED });
+      return;
+    }
+
+    const { meetingId } = req.params;
+    const meeting = MeetingService.getMeeting(meetingId as string);
+
+    if (!meeting) {
+      res.status(404).json({ success: false, message: MEETING_MESSAGES.NOT_FOUND });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: MeetingService.toMeetingResponse(meeting),
+    });
+
+  } catch (err) {
+    const message = err instanceof Error ? err.message : MEETING_MESSAGES.FETCH_FAILED;
+    res.status(500).json({ success: false, message });
+  }
+}
+
+// ================================================================
+// getParticipants  GET /api/meetings/:meetingId/participants
+// Returns the current participant list (no socketIds exposed).
+// ================================================================
+export async function getParticipants(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: MEETING_MESSAGES.UNAUTHORIZED });
+      return;
+    }
+
+    const { meetingId } = req.params;
+    const participants = MeetingService.getParticipantList(meetingId as string);
+
+    res.status(200).json({
+      success: true,
+      data: { participants },
+    });
+
+  } catch (err) {
+    const message = err instanceof Error ? err.message : MEETING_MESSAGES.FETCH_FAILED;
+    res.status(500).json({ success: false, message });
+  }
+}
