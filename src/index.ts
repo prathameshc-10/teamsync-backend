@@ -8,7 +8,7 @@ import http from "http";
 import { Server as SocketServer } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
+import organizationRoutes from "./routes/organization.routes"; 
 import authRoutes from "./routes/auth.routes";
 import meetingRoutes from "./routes/meeting.routes";
 import { registerMeetingSocketHandlers } from "./sockets/meeting.socket";
@@ -32,6 +32,7 @@ app.use(cookieParser());
 // ── HTTP Routes ──────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/meetings", meetingRoutes);
+app.use("/api/organizations", organizationRoutes);
 
 // ── Socket.IO connection handler ─────────────────────────────
 io.on("connection", (socket) => {

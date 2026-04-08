@@ -156,3 +156,13 @@ export const MEETING_MESSAGES = {
   NOT_PRESENTER:          "You are not the current presenter",
   EMPTY_MESSAGE:          "Message cannot be empty",
 } as const;
+
+export const ORG_MESSAGES = {
+  ERROR: {
+    NAME_REQUIRED: 'Organization name is required',
+    USER_ID_REQUIRED: 'userId is required',
+    USER_NOT_FOUND: 'User not found',
+    ALREADY_MEMBER: 'User already in org',
+    INTERNAL_SERVER: 'Internal server error',
+  },
+} as const;

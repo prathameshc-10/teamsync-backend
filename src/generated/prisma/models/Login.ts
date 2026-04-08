@@ -225,7 +225,7 @@ export type LoginWhereInput = {
   isVerified?: Prisma.BoolFilter<"Login"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Login"> | Date | string
   organizations?: Prisma.OrganizationListRelationFilter
-  user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  user?: Prisma.UserListRelationFilter
   conversationMembers?: Prisma.ConversationMemberListRelationFilter
   sentMessages?: Prisma.MessageListRelationFilter
 }
@@ -238,7 +238,7 @@ export type LoginOrderByWithRelationInput = {
   isVerified?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   organizations?: Prisma.OrganizationOrderByRelationAggregateInput
-  user?: Prisma.UserOrderByWithRelationInput
+  user?: Prisma.UserOrderByRelationAggregateInput
   conversationMembers?: Prisma.ConversationMemberOrderByRelationAggregateInput
   sentMessages?: Prisma.MessageOrderByRelationAggregateInput
 }
@@ -254,7 +254,7 @@ export type LoginWhereUniqueInput = Prisma.AtLeast<{
   isVerified?: Prisma.BoolFilter<"Login"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Login"> | Date | string
   organizations?: Prisma.OrganizationListRelationFilter
-  user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  user?: Prisma.UserListRelationFilter
   conversationMembers?: Prisma.ConversationMemberListRelationFilter
   sentMessages?: Prisma.MessageListRelationFilter
 }, "userId" | "email">
@@ -292,7 +292,7 @@ export type LoginCreateInput = {
   isVerified?: boolean
   createdAt?: Date | string
   organizations?: Prisma.OrganizationCreateNestedManyWithoutLoginInput
-  user?: Prisma.UserCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserCreateNestedManyWithoutLoginInput
   conversationMembers?: Prisma.ConversationMemberCreateNestedManyWithoutLoginInput
   sentMessages?: Prisma.MessageCreateNestedManyWithoutSenderInput
 }
@@ -305,7 +305,7 @@ export type LoginUncheckedCreateInput = {
   isVerified?: boolean
   createdAt?: Date | string
   organizations?: Prisma.OrganizationUncheckedCreateNestedManyWithoutLoginInput
-  user?: Prisma.UserUncheckedCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserUncheckedCreateNestedManyWithoutLoginInput
   conversationMembers?: Prisma.ConversationMemberUncheckedCreateNestedManyWithoutLoginInput
   sentMessages?: Prisma.MessageUncheckedCreateNestedManyWithoutSenderInput
 }
@@ -317,7 +317,7 @@ export type LoginUpdateInput = {
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   organizations?: Prisma.OrganizationUpdateManyWithoutLoginNestedInput
-  user?: Prisma.UserUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUpdateManyWithoutLoginNestedInput
   conversationMembers?: Prisma.ConversationMemberUpdateManyWithoutLoginNestedInput
   sentMessages?: Prisma.MessageUpdateManyWithoutSenderNestedInput
 }
@@ -330,7 +330,7 @@ export type LoginUncheckedUpdateInput = {
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   organizations?: Prisma.OrganizationUncheckedUpdateManyWithoutLoginNestedInput
-  user?: Prisma.UserUncheckedUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUncheckedUpdateManyWithoutLoginNestedInput
   conversationMembers?: Prisma.ConversationMemberUncheckedUpdateManyWithoutLoginNestedInput
   sentMessages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput
 }
@@ -483,7 +483,7 @@ export type LoginCreateWithoutOrganizationsInput = {
   fullName: string
   isVerified?: boolean
   createdAt?: Date | string
-  user?: Prisma.UserCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserCreateNestedManyWithoutLoginInput
   conversationMembers?: Prisma.ConversationMemberCreateNestedManyWithoutLoginInput
   sentMessages?: Prisma.MessageCreateNestedManyWithoutSenderInput
 }
@@ -495,7 +495,7 @@ export type LoginUncheckedCreateWithoutOrganizationsInput = {
   fullName: string
   isVerified?: boolean
   createdAt?: Date | string
-  user?: Prisma.UserUncheckedCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserUncheckedCreateNestedManyWithoutLoginInput
   conversationMembers?: Prisma.ConversationMemberUncheckedCreateNestedManyWithoutLoginInput
   sentMessages?: Prisma.MessageUncheckedCreateNestedManyWithoutSenderInput
 }
@@ -522,7 +522,7 @@ export type LoginUpdateWithoutOrganizationsInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUpdateManyWithoutLoginNestedInput
   conversationMembers?: Prisma.ConversationMemberUpdateManyWithoutLoginNestedInput
   sentMessages?: Prisma.MessageUpdateManyWithoutSenderNestedInput
 }
@@ -534,7 +534,7 @@ export type LoginUncheckedUpdateWithoutOrganizationsInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUncheckedUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUncheckedUpdateManyWithoutLoginNestedInput
   conversationMembers?: Prisma.ConversationMemberUncheckedUpdateManyWithoutLoginNestedInput
   sentMessages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput
 }
@@ -608,7 +608,7 @@ export type LoginCreateWithoutConversationMembersInput = {
   isVerified?: boolean
   createdAt?: Date | string
   organizations?: Prisma.OrganizationCreateNestedManyWithoutLoginInput
-  user?: Prisma.UserCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserCreateNestedManyWithoutLoginInput
   sentMessages?: Prisma.MessageCreateNestedManyWithoutSenderInput
 }
 
@@ -620,7 +620,7 @@ export type LoginUncheckedCreateWithoutConversationMembersInput = {
   isVerified?: boolean
   createdAt?: Date | string
   organizations?: Prisma.OrganizationUncheckedCreateNestedManyWithoutLoginInput
-  user?: Prisma.UserUncheckedCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserUncheckedCreateNestedManyWithoutLoginInput
   sentMessages?: Prisma.MessageUncheckedCreateNestedManyWithoutSenderInput
 }
 
@@ -647,7 +647,7 @@ export type LoginUpdateWithoutConversationMembersInput = {
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   organizations?: Prisma.OrganizationUpdateManyWithoutLoginNestedInput
-  user?: Prisma.UserUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUpdateManyWithoutLoginNestedInput
   sentMessages?: Prisma.MessageUpdateManyWithoutSenderNestedInput
 }
 
@@ -659,7 +659,7 @@ export type LoginUncheckedUpdateWithoutConversationMembersInput = {
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   organizations?: Prisma.OrganizationUncheckedUpdateManyWithoutLoginNestedInput
-  user?: Prisma.UserUncheckedUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUncheckedUpdateManyWithoutLoginNestedInput
   sentMessages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput
 }
 
@@ -670,7 +670,7 @@ export type LoginCreateWithoutSentMessagesInput = {
   isVerified?: boolean
   createdAt?: Date | string
   organizations?: Prisma.OrganizationCreateNestedManyWithoutLoginInput
-  user?: Prisma.UserCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserCreateNestedManyWithoutLoginInput
   conversationMembers?: Prisma.ConversationMemberCreateNestedManyWithoutLoginInput
 }
 
@@ -682,7 +682,7 @@ export type LoginUncheckedCreateWithoutSentMessagesInput = {
   isVerified?: boolean
   createdAt?: Date | string
   organizations?: Prisma.OrganizationUncheckedCreateNestedManyWithoutLoginInput
-  user?: Prisma.UserUncheckedCreateNestedOneWithoutLoginInput
+  user?: Prisma.UserUncheckedCreateNestedManyWithoutLoginInput
   conversationMembers?: Prisma.ConversationMemberUncheckedCreateNestedManyWithoutLoginInput
 }
 
@@ -709,7 +709,7 @@ export type LoginUpdateWithoutSentMessagesInput = {
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   organizations?: Prisma.OrganizationUpdateManyWithoutLoginNestedInput
-  user?: Prisma.UserUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUpdateManyWithoutLoginNestedInput
   conversationMembers?: Prisma.ConversationMemberUpdateManyWithoutLoginNestedInput
 }
 
@@ -721,7 +721,7 @@ export type LoginUncheckedUpdateWithoutSentMessagesInput = {
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   organizations?: Prisma.OrganizationUncheckedUpdateManyWithoutLoginNestedInput
-  user?: Prisma.UserUncheckedUpdateOneWithoutLoginNestedInput
+  user?: Prisma.UserUncheckedUpdateManyWithoutLoginNestedInput
   conversationMembers?: Prisma.ConversationMemberUncheckedUpdateManyWithoutLoginNestedInput
 }
 
@@ -732,12 +732,14 @@ export type LoginUncheckedUpdateWithoutSentMessagesInput = {
 
 export type LoginCountOutputType = {
   organizations: number
+  user: number
   conversationMembers: number
   sentMessages: number
 }
 
 export type LoginCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   organizations?: boolean | LoginCountOutputTypeCountOrganizationsArgs
+  user?: boolean | LoginCountOutputTypeCountUserArgs
   conversationMembers?: boolean | LoginCountOutputTypeCountConversationMembersArgs
   sentMessages?: boolean | LoginCountOutputTypeCountSentMessagesArgs
 }
@@ -757,6 +759,13 @@ export type LoginCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
  */
 export type LoginCountOutputTypeCountOrganizationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.OrganizationWhereInput
+}
+
+/**
+ * LoginCountOutputType without action
+ */
+export type LoginCountOutputTypeCountUserArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserWhereInput
 }
 
 /**
@@ -830,7 +839,7 @@ export type $LoginPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name: "Login"
   objects: {
     organizations: Prisma.$OrganizationPayload<ExtArgs>[]
-    user: Prisma.$UserPayload<ExtArgs> | null
+    user: Prisma.$UserPayload<ExtArgs>[]
     conversationMembers: Prisma.$ConversationMemberPayload<ExtArgs>[]
     sentMessages: Prisma.$MessagePayload<ExtArgs>[]
   }
@@ -1236,7 +1245,7 @@ readonly fields: LoginFieldRefs;
 export interface Prisma__LoginClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   organizations<T extends Prisma.Login$organizationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Login$organizationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrganizationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  user<T extends Prisma.Login$userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Login$userArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.Login$userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Login$userArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   conversationMembers<T extends Prisma.Login$conversationMembersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Login$conversationMembersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ConversationMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sentMessages<T extends Prisma.Login$sentMessagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Login$sentMessagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1707,6 +1716,11 @@ export type Login$userArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
    */
   include?: Prisma.UserInclude<ExtArgs> | null
   where?: Prisma.UserWhereInput
+  orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[]
+  cursor?: Prisma.UserWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserScalarFieldEnum | Prisma.UserScalarFieldEnum[]
 }
 
 /**
