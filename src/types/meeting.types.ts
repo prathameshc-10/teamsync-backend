@@ -146,3 +146,11 @@ export interface ChatMessagePayload {
 export interface ErrorPayload {
   message: string;
 }
+
+export interface ScreenShareStartedPayload {
+  screenShareUserId: number;
+  screenShareUserName: string;
+}
+export interface ScreenShareStoppedPayload {
+  stoppedByUserId: number;
+}

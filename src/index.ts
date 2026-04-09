@@ -1,48 +1,45 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Server as SocketServer } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 
 import authRoutes from "./routes/auth.routes";
 import meetingRoutes from "./routes/meeting.routes";
+import conversationRoutes from "./routes/conversation.routes";
 import { registerSocketHandlers } from "./sockets/socketHandler";
 import { registerMeetingSocketHandlers } from "./sockets/meeting.socket";
 import { JWT_CONFIG } from "./config/jwt.config";
 import type { AuthenticatedSocket, JwtPayload } from "./types/auth.types";
-import conversationRoutes from "./routes/conversation.routes";
 
 const app = express();
-const httpServer = createServer(app);
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 
-// ── Socket.IO setup ──────────────────────────────────────────
-const io = new Server(httpServer, {
+// ── HTTP Server ───────────────────────────────────────────────
+const httpServer = createServer(app);
+
+// ── Socket.IO ─────────────────────────────────────────────────
+const io = new SocketServer(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: "*",
     credentials: true,
   },
 });
 
-// ── Middleware ───────────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+// ── Middleware ────────────────────────────────────────────────
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// ── HTTP Routes ──────────────────────────────────────────────
+// ── HTTP Routes ───────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/meetings", meetingRoutes);
 app.use("/api/conversations", conversationRoutes);
 
-// ── Socket.IO JWT Middleware ─────────────────────────────────
+// ── Socket.IO JWT Middleware ──────────────────────────────────
 io.use((socket, next) => {
-  console.log("=== SOCKET HANDSHAKE ===");
-  console.log("auth:", socket.handshake.auth);
-  console.log("authorization header:", socket.handshake.headers.authorization);
-  console.log("========================");
-
   const raw =
     socket.handshake.auth?.token ||
     socket.handshake.headers?.authorization;
@@ -65,7 +62,7 @@ io.use((socket, next) => {
   }
 });
 
-// ── Socket.IO Connection Handler ─────────────────────────────
+// ── Socket.IO Connection ──────────────────────────────────────
 io.on("connection", (socket) => {
   console.log(`[socket] connected: ${socket.id}`);
 
@@ -77,7 +74,8 @@ io.on("connection", (socket) => {
   });
 });
 
-// ── Start Server ─────────────────────────────────────────────
-httpServer.listen(PORT, () => {
-  console.log(`[server] running on http://localhost:${PORT}`);
+// ── Start ─────────────────────────────────────────────────────
+// ── Start ─────────────────────────────────────────────────────
+httpServer.listen(Number(PORT), "0.0.0.0", () => {
+  console.log(`[server] running on http://192.168.21.13:${PORT}`);
 });
