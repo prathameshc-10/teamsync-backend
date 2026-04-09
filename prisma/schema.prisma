@@ -83,7 +83,7 @@ model Message {
   createdAt      DateTime @default(now())
   editedAt        DateTime?
 
-  reactions      Reaction[]
+  reactions      Reaction[     ]
 
   conversation Conversation @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
   sender       Login        @relation(fields: [senderId], references: [userId], onDelete: Cascade)
