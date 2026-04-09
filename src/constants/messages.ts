@@ -136,3 +136,34 @@ export const USER_VALIDATION ={
   FAILED_TO_FETCH_HR: "Failed to fetch HRs",
   FAILED_TO_FETCH_MANAGER: "Failed to fetch managers" 
 } as const;
+
+export const MEETING_MESSAGES = {
+  CREATED:                "Meeting created successfully",
+  CREATE_FAILED:          "Failed to create meeting",
+  NOT_FOUND:              "Meeting not found",
+  ENDED:                  "Meeting has already ended",
+  FETCH_FAILED:           "Failed to fetch meeting",
+  FIELDS_REQUIRED:        "sourceType and sourceId are required",
+  INVALID_SOURCE_TYPE:    "sourceType must be 'channel' or 'dm'",
+  UNAUTHORIZED:           "Unauthorized",
+  USER_NOT_FOUND:         "User not found",
+ 
+  NOT_PARTICIPANT:        "You are not in this meeting",
+  PARTICIPANT_NOT_FOUND:  "Participant not found in this meeting",
+  CANNOT_REMOVE_SELF:     "Host cannot remove themselves",
+  HOST_ONLY:              "Only the host can perform this action",
+  PRESENTER_ONLY:         "Only the current presenter can perform this action",
+  NOT_PRESENTER:          "You are not the current presenter",
+  EMPTY_MESSAGE:          "Message cannot be empty",
+} as const;
+
+export const CONVERSATION_MESSAGES = {
+  NOT_A_MEMBER: "You are not a member of this conversation",
+  ALREADY_A_MEMBER: "User is already a member",
+  UNAUTHORIZED: "Unauthorized",
+  MEMBERS_REQUIRED: "memberUserIds array is required",
+  FAILED_TO_CREATE:  "Failed to create conversation",
+  USERID_REQUIRED: "userId is required",
+  FAILED_TO_ADD: "Failed to add member",
+  FAILED_TO_FETCH: "Failed to fetch conversations"
+} as const;
