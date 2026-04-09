@@ -50,6 +50,8 @@ export const MEETING_EVENTS = {
   ENDED:              "meeting:ended",
   WEBRTC_SIGNAL_RECV: "meeting:webrtc:signal:recv", // forwarded signal
   ERROR:              "meeting:error",
+  SCREEN_SHARE_STARTED: "meeting:screenshare:started",
+  SCREEN_SHARE_STOPPED: "meeting:screenshare:stopped",
 } as const;
 
 // ── Helper: room name for a meeting ─────────────────────────
