@@ -16,7 +16,7 @@ model Login {
   createdAt  DateTime @default(now())
 
   organizations       Organization[]
-  user                User?
+  user                User[]
   conversationMembers ConversationMember[]
   sentMessages        Message[]
 
@@ -38,13 +38,17 @@ model Organization {
 
 model User {
   id       Int     @id @default(autoincrement())
-  userId   Int     @unique
+  userId   Int     // REMOVED @unique to allow this ID to appear multiple times
   orgId    Int
   isActive Boolean @default(true)
 
+  // Relations
   login Login        @relation(fields: [userId], references: [userId], onDelete: Cascade)
   org   Organization @relation(fields: [orgId], references: [orgId], onDelete: Cascade)
 
+  // This allows the user to be in many orgs,
+  // but prevents them from being added to the SAME org twice.
+  @@unique([userId, orgId])
   @@map("User")
 }
 

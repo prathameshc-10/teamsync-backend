@@ -8,24 +8,30 @@ import http from "http";
 import { Server as SocketServer } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import organizationRoutes from "../src/routes/organization.routes"; 
+import organizationRoutes from "../src/routes/organization.routes";
 import authRoutes from "./routes/auth.routes";
 import meetingRoutes from "./routes/meeting.routes";
+import profileRoutes from "./routes/profile.routes";
 import { registerMeetingSocketHandlers } from "./sockets/meeting.socket";
 
 const app = express();
-const httpServer = http.createServer(app); // wrap express in http.Server for Socket.IO
+const httpServer = http.createServer(app);
 
 // ── Socket.IO setup ──────────────────────────────────────────
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [process.env.CLIENT_URL || "http://localhost:5173", "http://localhost:3000"],
     credentials: true,
   },
 });
 
 // ── Middleware ───────────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+app.use(cors({
+  origin: [process.env.CLIENT_URL || "http://localhost:5173", "http://localhost:3000"],
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -33,12 +39,12 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/meetings", meetingRoutes);
 app.use("/api/organizations", organizationRoutes);
+app.use("/api/profile", profileRoutes);
 
 // ── Socket.IO connection handler ─────────────────────────────
 io.on("connection", (socket) => {
   console.log(`[socket] connected: ${socket.id}`);
 
-  // Register all meeting-related socket event handlers
   registerMeetingSocketHandlers(io, socket);
 
   socket.on("disconnect", () => {
