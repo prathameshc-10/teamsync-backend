@@ -1,19 +1,13 @@
+// organization.services.ts
 import prisma from '../config/prisma';
-import { ORG_MESSAGES } from '../constants/messages';
-
 
 export const createOrganization = async (orgName: string, userId: number) => {
   return await prisma.organization.create({
     data: {
       orgName,
-      userId, // This identifies the owner/creator
+      userId,
       users: {
-        create: [
-          { 
-            // We connect the creator to the membership (User) table
-            userId: userId 
-          }
-        ],
+        create: [{ userId }],
       },
     },
     include: { users: true },
@@ -33,24 +27,34 @@ export const getMyOrganizations = async (userId: number) => {
 
 export const getMembers = async (orgId: number) => {
   return await prisma.user.findMany({
-    where: { orgId },
+    where: { orgId: orgId,},
     include: {
-      login: { select: { userId: true, fullName: true, email: true } },
+      login: {
+        select: {
+          userId: true,
+          fullName: true,
+          email: true,
+          isVerified: true,
+          createdAt: true,
+        },
+      },
     },
   });
 };
 
 export const addMember = async (orgId: number, userId: number) => {
-  // Check if login exists
   const loginExists = await prisma.login.findUnique({ where: { userId } });
   if (!loginExists) throw { status: 404, message: 'User not found' };
 
-  // Check if ALREADY in THIS specific org
-  const alreadyMember = await prisma.user.findFirst({ 
-    where: { userId, orgId } 
-  });
+  const alreadyMember = await prisma.user.findFirst({ where: { userId, orgId } });
   if (alreadyMember) throw { status: 409, message: 'User already in this org' };
 
-  // Create membership (This will work now because userId is no longer @unique)
   return await prisma.user.create({ data: { userId, orgId } });
+};
+
+export const deleteOrganization = async (orgId: number, userId: number) => {
+  const org = await prisma.organization.findUnique({ where: { orgId: orgId, } });
+  if (!org) throw { status: 404, message: 'Organization not found' };
+  if (org.userId !== userId) throw { status: 403, message: 'Only the owner can delete this organization' };
+  return await prisma.organization.delete({ where: { orgId } });
 };
