@@ -4,6 +4,7 @@ import {
   getMyOrganizations,
   getMembers,
   addMember,
+  deleteOrganization
 } from '../controllers/organization.controller';
 import { verifyAccessToken } from '../middleware/auth.middleware';
 
@@ -14,5 +15,6 @@ router.post('/', createOrganization);
 router.get('/', getMyOrganizations);
 router.get('/:orgId/members', getMembers);
 router.post('/:orgId/members', addMember);
+router.delete('/:orgId', deleteOrganization);
 
 export default router;

@@ -16,9 +16,10 @@ export interface CreateOrganizationBody {
 }
 
 export interface AddMemberBody {
-  userId: number;
+  userId: string; // comes in as string from req.body
 }
 
 export interface OrgParams {
   orgId: string;
 }
+

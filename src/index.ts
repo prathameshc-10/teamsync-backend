@@ -15,17 +15,22 @@ import { registerMeetingSocketHandlers } from "./sockets/meeting.socket";
 
 const app = express();
 const httpServer = http.createServer(app); // wrap express in http.Server for Socket.IO
-
+const ALLOWED_ORIGINS = (process.env.FRONTEND_URL || "http://localhost:3000").split(",");
 // ── Socket.IO setup ──────────────────────────────────────────
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: ALLOWED_ORIGINS,
     credentials: true,
   },
 });
 
+// app.use(cors({
+//   origin: ALLOWED_ORIGINS,
+//   credentials: true,
+// }));
+
 // ── Middleware ───────────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
