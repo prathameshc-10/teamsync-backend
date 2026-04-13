@@ -231,15 +231,16 @@ export type UserOrderByWithRelationInput = {
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
   id?: number
-  userId?: number
+  userId_orgId?: Prisma.UserUserIdOrgIdCompoundUniqueInput
   AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
+  userId?: Prisma.IntFilter<"User"> | number
   orgId?: Prisma.IntFilter<"User"> | number
   isActive?: Prisma.BoolFilter<"User"> | boolean
   login?: Prisma.XOR<Prisma.LoginScalarRelationFilter, Prisma.LoginWhereInput>
   org?: Prisma.XOR<Prisma.OrganizationScalarRelationFilter, Prisma.OrganizationWhereInput>
-}, "id" | "userId">
+}, "id" | "userId_orgId">
 
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -307,11 +308,6 @@ export type UserUncheckedUpdateManyInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
-export type UserNullableScalarRelationFilter = {
-  is?: Prisma.UserWhereInput | null
-  isNot?: Prisma.UserWhereInput | null
-}
-
 export type UserListRelationFilter = {
   every?: Prisma.UserWhereInput
   some?: Prisma.UserWhereInput
@@ -320,6 +316,11 @@ export type UserListRelationFilter = {
 
 export type UserOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type UserUserIdOrgIdCompoundUniqueInput = {
+  userId: number
+  orgId: number
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -355,36 +356,46 @@ export type UserSumOrderByAggregateInput = {
   orgId?: Prisma.SortOrder
 }
 
-export type UserCreateNestedOneWithoutLoginInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput
-  connect?: Prisma.UserWhereUniqueInput
+export type UserCreateNestedManyWithoutLoginInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput> | Prisma.UserCreateWithoutLoginInput[] | Prisma.UserUncheckedCreateWithoutLoginInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput | Prisma.UserCreateOrConnectWithoutLoginInput[]
+  createMany?: Prisma.UserCreateManyLoginInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
 }
 
-export type UserUncheckedCreateNestedOneWithoutLoginInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput
-  connect?: Prisma.UserWhereUniqueInput
+export type UserUncheckedCreateNestedManyWithoutLoginInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput> | Prisma.UserCreateWithoutLoginInput[] | Prisma.UserUncheckedCreateWithoutLoginInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput | Prisma.UserCreateOrConnectWithoutLoginInput[]
+  createMany?: Prisma.UserCreateManyLoginInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
 }
 
-export type UserUpdateOneWithoutLoginNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput
-  upsert?: Prisma.UserUpsertWithoutLoginInput
-  disconnect?: Prisma.UserWhereInput | boolean
-  delete?: Prisma.UserWhereInput | boolean
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLoginInput, Prisma.UserUpdateWithoutLoginInput>, Prisma.UserUncheckedUpdateWithoutLoginInput>
+export type UserUpdateManyWithoutLoginNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput> | Prisma.UserCreateWithoutLoginInput[] | Prisma.UserUncheckedCreateWithoutLoginInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput | Prisma.UserCreateOrConnectWithoutLoginInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutLoginInput | Prisma.UserUpsertWithWhereUniqueWithoutLoginInput[]
+  createMany?: Prisma.UserCreateManyLoginInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutLoginInput | Prisma.UserUpdateWithWhereUniqueWithoutLoginInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutLoginInput | Prisma.UserUpdateManyWithWhereWithoutLoginInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
 }
 
-export type UserUncheckedUpdateOneWithoutLoginNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput
-  upsert?: Prisma.UserUpsertWithoutLoginInput
-  disconnect?: Prisma.UserWhereInput | boolean
-  delete?: Prisma.UserWhereInput | boolean
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLoginInput, Prisma.UserUpdateWithoutLoginInput>, Prisma.UserUncheckedUpdateWithoutLoginInput>
+export type UserUncheckedUpdateManyWithoutLoginNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput> | Prisma.UserCreateWithoutLoginInput[] | Prisma.UserUncheckedCreateWithoutLoginInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLoginInput | Prisma.UserCreateOrConnectWithoutLoginInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutLoginInput | Prisma.UserUpsertWithWhereUniqueWithoutLoginInput[]
+  createMany?: Prisma.UserCreateManyLoginInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutLoginInput | Prisma.UserUpdateWithWhereUniqueWithoutLoginInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutLoginInput | Prisma.UserUpdateManyWithWhereWithoutLoginInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
 }
 
 export type UserCreateNestedManyWithoutOrgInput = {
@@ -445,26 +456,35 @@ export type UserCreateOrConnectWithoutLoginInput = {
   create: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput>
 }
 
-export type UserUpsertWithoutLoginInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutLoginInput, Prisma.UserUncheckedUpdateWithoutLoginInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput>
-  where?: Prisma.UserWhereInput
+export type UserCreateManyLoginInputEnvelope = {
+  data: Prisma.UserCreateManyLoginInput | Prisma.UserCreateManyLoginInput[]
+  skipDuplicates?: boolean
 }
 
-export type UserUpdateToOneWithWhereWithoutLoginInput = {
-  where?: Prisma.UserWhereInput
+export type UserUpsertWithWhereUniqueWithoutLoginInput = {
+  where: Prisma.UserWhereUniqueInput
+  update: Prisma.XOR<Prisma.UserUpdateWithoutLoginInput, Prisma.UserUncheckedUpdateWithoutLoginInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutLoginInput, Prisma.UserUncheckedCreateWithoutLoginInput>
+}
+
+export type UserUpdateWithWhereUniqueWithoutLoginInput = {
+  where: Prisma.UserWhereUniqueInput
   data: Prisma.XOR<Prisma.UserUpdateWithoutLoginInput, Prisma.UserUncheckedUpdateWithoutLoginInput>
 }
 
-export type UserUpdateWithoutLoginInput = {
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  org?: Prisma.OrganizationUpdateOneRequiredWithoutUsersNestedInput
+export type UserUpdateManyWithWhereWithoutLoginInput = {
+  where: Prisma.UserScalarWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateManyMutationInput, Prisma.UserUncheckedUpdateManyWithoutLoginInput>
 }
 
-export type UserUncheckedUpdateWithoutLoginInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  orgId?: Prisma.IntFieldUpdateOperationsInput | number
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+export type UserScalarWhereInput = {
+  AND?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  OR?: Prisma.UserScalarWhereInput[]
+  NOT?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  id?: Prisma.IntFilter<"User"> | number
+  userId?: Prisma.IntFilter<"User"> | number
+  orgId?: Prisma.IntFilter<"User"> | number
+  isActive?: Prisma.BoolFilter<"User"> | boolean
 }
 
 export type UserCreateWithoutOrgInput = {
@@ -504,14 +524,27 @@ export type UserUpdateManyWithWhereWithoutOrgInput = {
   data: Prisma.XOR<Prisma.UserUpdateManyMutationInput, Prisma.UserUncheckedUpdateManyWithoutOrgInput>
 }
 
-export type UserScalarWhereInput = {
-  AND?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
-  OR?: Prisma.UserScalarWhereInput[]
-  NOT?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
-  id?: Prisma.IntFilter<"User"> | number
-  userId?: Prisma.IntFilter<"User"> | number
-  orgId?: Prisma.IntFilter<"User"> | number
-  isActive?: Prisma.BoolFilter<"User"> | boolean
+export type UserCreateManyLoginInput = {
+  id?: number
+  orgId: number
+  isActive?: boolean
+}
+
+export type UserUpdateWithoutLoginInput = {
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  org?: Prisma.OrganizationUpdateOneRequiredWithoutUsersNestedInput
+}
+
+export type UserUncheckedUpdateWithoutLoginInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  orgId?: Prisma.IntFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+}
+
+export type UserUncheckedUpdateManyWithoutLoginInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  orgId?: Prisma.IntFieldUpdateOperationsInput | number
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type UserCreateManyOrgInput = {
