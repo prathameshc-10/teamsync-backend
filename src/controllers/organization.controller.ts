@@ -49,23 +49,23 @@ export const getMembers = async (req: AuthRequest, res: Response): Promise<void>
 
 export const addMember = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { userId } = req.body as AddMemberBody;
-    const id = req.params.orgId || req.params.id;
-    const numericOrgId = Number(id);
-    const numericUserId = Number(userId);
+    const { email } = req.body as AddMemberBody
+    const { orgId } = req.params as unknown as OrgParams
 
-    if (!id || isNaN(numericOrgId) || isNaN(numericUserId)) {
-      res.status(400).json({ error: "Valid Organization ID and User ID are required" });
-      return;
+    if (!email) {
+      res.status(400).json({ error: 'Email is required' })
+      return
     }
 
-    const user = await orgService.addMember(numericOrgId, numericUserId);
-    res.status(201).json(user);
+    const user = await orgService.addMember(parseInt(orgId), email)
+    res.status(201).json({
+      message: 'Member added successfully',
+      data: user
+    })
   } catch (err: any) {
-    console.error("[addMember]", err);
-    res.status(err.status || 500).json({ error: err.message || ORG_MESSAGES.ERROR.INTERNAL_SERVER });
+    res.status(err.status || 500).json({ error: err.message })
   }
-};
+}
 
 export const deleteOrganization = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
