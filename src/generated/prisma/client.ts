@@ -69,3 +69,8 @@ export type ConversationMember = Prisma.ConversationMemberModel
  * 
  */
 export type Message = Prisma.MessageModel
+/**
+ * Model Reaction
+ * 
+ */
+export type Reaction = Prisma.ReactionModel

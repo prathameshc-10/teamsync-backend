@@ -1,13 +1,9 @@
 // ============================================================
 // src/sockets/meeting.socket.ts
-// All real-time meeting events handled here via Socket.IO.
-//
-// Socket room strategy:
-//   Each meeting gets its own room: `meeting:<meetingId>`
-//   All events are broadcast within that room only.
 // ============================================================
 
 import { Server as SocketServer, Socket } from "socket.io";
+
 import jwt from "jsonwebtoken";
 import { JWT_CONFIG } from "../config/jwt.config";
 import * as MeetingService from "../services/meeting.service";
@@ -23,68 +19,71 @@ import type {
 } from "../types/meeting.types";
 import prisma from "../config/prisma";
 
+// ── Extend socket type to avoid (socket as any) ──────────────
+interface MeetingSocket extends Socket {
+  _meetingId?: string;
+  _userId?: number;
+  _fullName?: string; // FIX: store fullName so handleLeave can use it after removal
+}
+
 // ── Socket event names ───────────────────────────────────────
 export const MEETING_EVENTS = {
   // Client → Server
-  JOIN:               "meeting:join",
-  LEAVE:              "meeting:leave",
-  END:                "meeting:end",
-  SEND_CHAT:          "meeting:chat:send",
-  TRANSFER_PRESENTER: "meeting:presenter:transfer",
-  PRESENTER_ACTION:   "meeting:presenter:action",  // start/stop screen share
-  MUTE_PARTICIPANT:   "meeting:mute:participant",
-  MUTE_ALL:           "meeting:mute:all",
-  TOGGLE_SELF_MUTE:   "meeting:mute:self",
-  REMOVE_PARTICIPANT: "meeting:remove:participant",
-  WEBRTC_SIGNAL:      "meeting:webrtc:signal",     // relay SDP/ICE
+  JOIN:                 "meeting:join",
+  LEAVE:                "meeting:leave",
+  END:                  "meeting:end",
+  SEND_CHAT:            "meeting:chat:send",
+  TRANSFER_PRESENTER:   "meeting:presenter:transfer",
+  PRESENTER_ACTION:     "meeting:presenter:action",
+  MUTE_PARTICIPANT:     "meeting:mute:participant",
+  MUTE_ALL:             "meeting:mute:all",
+  TOGGLE_SELF_MUTE:     "meeting:mute:self",
+  REMOVE_PARTICIPANT:   "meeting:remove:participant",
+  WEBRTC_SIGNAL:        "meeting:webrtc:signal",
 
   // Server → Client
-  JOINED:             "meeting:joined",
-  PARTICIPANT_JOINED: "meeting:participant:joined",
-  PARTICIPANT_LEFT:   "meeting:participant:left",
-  PARTICIPANT_REMOVED:"meeting:participant:removed",
-  PRESENTER_CHANGED:  "meeting:presenter:changed",
-  PARTICIPANT_MUTED:  "meeting:participant:muted",
-  ALL_MUTED:          "meeting:all:muted",
-  CHAT_MESSAGE:       "meeting:chat:message",
-  ENDED:              "meeting:ended",
-  WEBRTC_SIGNAL_RECV: "meeting:webrtc:signal:recv", // forwarded signal
-  ERROR:              "meeting:error",
+  JOINED:               "meeting:joined",
+  PARTICIPANT_JOINED:   "meeting:participant:joined",
+  PARTICIPANT_LEFT:     "meeting:participant:left",
+  PARTICIPANT_REMOVED:  "meeting:participant:removed",
+  PRESENTER_CHANGED:    "meeting:presenter:changed",
+  PARTICIPANT_MUTED:    "meeting:participant:muted",
+  ALL_MUTED:            "meeting:all:muted",
+  CHAT_MESSAGE:         "meeting:chat:message",
+  ENDED:                "meeting:ended",
+  WEBRTC_SIGNAL_RECV:   "meeting:webrtc:signal:recv",
+  ERROR:                "meeting:error",
+
+  // FIX: these were defined but never emitted — now properly fired
+  SCREEN_SHARE_STARTED: "meeting:screenshare:started",
+  SCREEN_SHARE_STOPPED: "meeting:screenshare:stopped",
 } as const;
 
-// ── Helper: room name for a meeting ─────────────────────────
 function roomName(meetingId: string): string {
   return `meeting:${meetingId}`;
 }
 
-// ── Helper: verify JWT from socket handshake ─────────────────
 function verifySocketToken(token: string): JwtPayload {
   return jwt.verify(token, JWT_CONFIG.ACCESS_TOKEN_SECRET) as JwtPayload;
 }
 
-// ── Helper: emit error to single socket ─────────────────────
 function emitError(socket: Socket, message: string): void {
   socket.emit(MEETING_EVENTS.ERROR, { message });
 }
 
-// ================================================================
+// ============================================================
 // registerMeetingSocketHandlers
-// Call this once per connected socket in your main socket setup.
-// ================================================================
+// ============================================================
 export function registerMeetingSocketHandlers(
   io: SocketServer,
-  socket: Socket
+  socket: MeetingSocket
 ): void {
 
-  // ============================================================
-  // meeting:join
-  // Client sends JWT + meetingId to join.
-  // ============================================================
+  // ── meeting:join ──────────────────────────────────────────
   socket.on(MEETING_EVENTS.JOIN, async (payload: JoinMeetingPayload) => {
     try {
       const { meetingId, token } = payload;
 
-      // Auth
       let decoded: JwtPayload;
       try {
         decoded = verifySocketToken(token);
@@ -92,13 +91,11 @@ export function registerMeetingSocketHandlers(
         return emitError(socket, "Unauthorized: invalid token");
       }
 
-      // Fetch user's fullName from DB
       const login = await prisma.login.findUnique({
         where: { userId: decoded.userId },
       });
       if (!login) return emitError(socket, "User not found");
 
-      // Join meeting state
       const { meeting, participant } = MeetingService.joinMeeting(
         meetingId,
         decoded.userId,
@@ -106,14 +103,13 @@ export function registerMeetingSocketHandlers(
         socket.id
       );
 
-      // Join socket room
       socket.join(roomName(meetingId));
 
-      // Store context on socket for later events
-      (socket as any)._meetingId = meetingId;
-      (socket as any)._userId = decoded.userId;
+      // Store on socket — using proper typed interface now
+      socket._meetingId = meetingId;
+      socket._userId    = decoded.userId;
+      socket._fullName  = login.fullName; // FIX: store so handleLeave can use it
 
-      // Send full meeting state to the joiner
       socket.emit(MEETING_EVENTS.JOINED, {
         meetingId: meeting.meetingId,
         meetingLink: meeting.meetingLink,
@@ -123,7 +119,6 @@ export function registerMeetingSocketHandlers(
         chatHistory: meeting.chatMessages,
       });
 
-      // Notify everyone else in the room
       socket.to(roomName(meetingId)).emit(MEETING_EVENTS.PARTICIPANT_JOINED, {
         participant: { ...participant, socketId: undefined },
       });
@@ -133,47 +128,34 @@ export function registerMeetingSocketHandlers(
     }
   });
 
-  // ============================================================
-  // meeting:leave
-  // Participant voluntarily leaves.
-  // ============================================================
+  // ── meeting:leave ─────────────────────────────────────────
   socket.on(MEETING_EVENTS.LEAVE, () => {
     handleLeave(io, socket);
   });
 
-  // ============================================================
-  // meeting:end
-  // Host ends the meeting for everyone.
-  // ============================================================
+  // ── meeting:end ───────────────────────────────────────────
   socket.on(MEETING_EVENTS.END, () => {
     try {
-      const meetingId: string = (socket as any)._meetingId;
-      const userId: number = (socket as any)._userId;
+      const { _meetingId: meetingId, _userId: userId } = socket;
       if (!meetingId || !userId) return emitError(socket, "Not in a meeting");
 
       const meeting = MeetingService.endMeeting(meetingId, userId);
 
-      // Notify all in room
       io.to(roomName(meetingId)).emit(MEETING_EVENTS.ENDED, {
         meetingId,
         endedAt: meeting.endedAt,
       });
 
-      // Disconnect all sockets from this room
       io.in(roomName(meetingId)).socketsLeave(roomName(meetingId));
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to end meeting");
     }
   });
 
-  // ============================================================
-  // meeting:chat:send
-  // Any participant sends a chat message.
-  // ============================================================
+  // ── meeting:chat:send ─────────────────────────────────────
   socket.on(MEETING_EVENTS.SEND_CHAT, (payload: SendChatPayload) => {
     try {
-      const userId: number = (socket as any)._userId;
+      const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
       const message = MeetingService.sendChatMessage(
@@ -182,23 +164,18 @@ export function registerMeetingSocketHandlers(
         payload.content
       );
 
-      // Broadcast to everyone in the meeting including sender
       io.to(roomName(payload.meetingId)).emit(MEETING_EVENTS.CHAT_MESSAGE, {
         message,
       });
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to send message");
     }
   });
 
-  // ============================================================
-  // meeting:presenter:transfer
-  // Host transfers presenter role to another participant.
-  // ============================================================
+  // ── meeting:presenter:transfer ────────────────────────────
   socket.on(MEETING_EVENTS.TRANSFER_PRESENTER, (payload: TransferPresenterPayload) => {
     try {
-      const userId: number = (socket as any)._userId;
+      const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
       const { meeting, newPresenter } = MeetingService.transferPresenter(
@@ -211,50 +188,61 @@ export function registerMeetingSocketHandlers(
         presenterUserId: meeting.presenterUserId,
         presenterName: newPresenter.fullName,
       });
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to transfer presenter");
     }
   });
 
-  // ============================================================
-  // meeting:presenter:action
-  // Presenter starts or stops screen sharing.
-  // ============================================================
+  // ── meeting:presenter:action (screen share) ───────────────
+  // FIX: now emits SCREEN_SHARE_STARTED / SCREEN_SHARE_STOPPED
+  // in addition to PRESENTER_CHANGED so clients can react to
+  // both the role change and the screen share state separately.
   socket.on(MEETING_EVENTS.PRESENTER_ACTION, (payload: PresenterActionPayload) => {
     try {
-      const userId: number = (socket as any)._userId;
+      const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
-      let meeting;
       if (payload.action === "start") {
-        meeting = MeetingService.startScreenShare(payload.meetingId, userId);
+        const meeting = MeetingService.startScreenShare(payload.meetingId, userId);
         const presenter = meeting.participants.get(userId);
+
+        // Tell everyone the presenter role changed
         io.to(roomName(payload.meetingId)).emit(MEETING_EVENTS.PRESENTER_CHANGED, {
           presenterUserId: userId,
           presenterName: presenter?.fullName ?? null,
         });
+
+        // Tell everyone screen share has started
+        io.to(roomName(payload.meetingId)).emit(MEETING_EVENTS.SCREEN_SHARE_STARTED, {
+          screenShareUserId: userId,
+          screenShareUserName: presenter?.fullName ?? null,
+        });
+
       } else {
-        meeting = MeetingService.stopScreenShare(payload.meetingId, userId);
+        const meeting = MeetingService.stopScreenShare(payload.meetingId, userId);
+        const stoppedBy = meeting.participants.get(userId);
+
+        // Tell everyone presenter is cleared
         io.to(roomName(payload.meetingId)).emit(MEETING_EVENTS.PRESENTER_CHANGED, {
           presenterUserId: null,
           presenterName: null,
         });
-      }
 
+        // Tell everyone screen share has stopped
+        io.to(roomName(payload.meetingId)).emit(MEETING_EVENTS.SCREEN_SHARE_STOPPED, {
+          stoppedByUserId: userId,
+          stoppedByUserName: stoppedBy?.fullName ?? null,
+        });
+      }
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to update screen share");
     }
   });
 
-  // ============================================================
-  // meeting:mute:self
-  // Participant toggles their own mute state.
-  // ============================================================
+  // ── meeting:mute:self ─────────────────────────────────────
   socket.on(MEETING_EVENTS.TOGGLE_SELF_MUTE, () => {
     try {
-      const meetingId: string = (socket as any)._meetingId;
-      const userId: number = (socket as any)._userId;
+      const { _meetingId: meetingId, _userId: userId } = socket;
       if (!meetingId || !userId) return emitError(socket, "Not in a meeting");
 
       const participant = MeetingService.toggleSelfMute(meetingId, userId);
@@ -264,19 +252,15 @@ export function registerMeetingSocketHandlers(
         isMuted: participant.isMuted,
         byHost: false,
       });
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to toggle mute");
     }
   });
 
-  // ============================================================
-  // meeting:mute:participant
-  // Host mutes a specific participant.
-  // ============================================================
+  // ── meeting:mute:participant ──────────────────────────────
   socket.on(MEETING_EVENTS.MUTE_PARTICIPANT, (payload: MuteParticipantPayload) => {
     try {
-      const userId: number = (socket as any)._userId;
+      const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
       const target = MeetingService.muteParticipant(
@@ -290,19 +274,15 @@ export function registerMeetingSocketHandlers(
         isMuted: true,
         byHost: true,
       });
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to mute participant");
     }
   });
 
-  // ============================================================
-  // meeting:mute:all
-  // Host mutes everyone.
-  // ============================================================
+  // ── meeting:mute:all ──────────────────────────────────────
   socket.on(MEETING_EVENTS.MUTE_ALL, (payload: { meetingId: string }) => {
     try {
-      const userId: number = (socket as any)._userId;
+      const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
       const muted = MeetingService.muteAll(payload.meetingId, userId);
@@ -311,19 +291,15 @@ export function registerMeetingSocketHandlers(
         mutedUserIds: muted.map((p) => p.userId),
         byHost: true,
       });
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to mute all");
     }
   });
 
-  // ============================================================
-  // meeting:remove:participant
-  // Host removes a participant from the meeting.
-  // ============================================================
+  // ── meeting:remove:participant ────────────────────────────
   socket.on(MEETING_EVENTS.REMOVE_PARTICIPANT, (payload: RemoveParticipantPayload) => {
     try {
-      const userId: number = (socket as any)._userId;
+      const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
       const removed = MeetingService.removeParticipant(
@@ -332,8 +308,7 @@ export function registerMeetingSocketHandlers(
         payload.targetUserId
       );
 
-      // Tell the removed socket to leave the room
-      const removedSocket = findSocketByUserId(io, payload.meetingId, removed.socketId);
+      const removedSocket = io.sockets.sockets.get(removed.socketId);
       if (removedSocket) {
         removedSocket.emit(MEETING_EVENTS.PARTICIPANT_REMOVED, {
           userId: removed.userId,
@@ -342,25 +317,19 @@ export function registerMeetingSocketHandlers(
         removedSocket.leave(roomName(payload.meetingId));
       }
 
-      // Notify remaining participants
       io.to(roomName(payload.meetingId)).emit(MEETING_EVENTS.PARTICIPANT_LEFT, {
         userId: removed.userId,
         fullName: removed.fullName,
       });
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Failed to remove participant");
     }
   });
 
-  // ============================================================
-  // meeting:webrtc:signal
-  // Relay WebRTC SDP offers/answers and ICE candidates between peers.
-  // The server acts as a signaling relay only — no media processing.
-  // ============================================================
+  // ── meeting:webrtc:signal ─────────────────────────────────
   socket.on(MEETING_EVENTS.WEBRTC_SIGNAL, (payload: WebRTCSignalPayload) => {
     try {
-      const userId: number = (socket as any)._userId;
+      const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
       const meeting = MeetingService.getMeeting(payload.meetingId);
@@ -369,65 +338,59 @@ export function registerMeetingSocketHandlers(
       const targetParticipant = meeting.participants.get(payload.targetUserId);
       if (!targetParticipant) return emitError(socket, "Target participant not found");
 
-      // Forward signal directly to the target peer
       io.to(targetParticipant.socketId).emit(MEETING_EVENTS.WEBRTC_SIGNAL_RECV, {
         fromUserId: userId,
         signal: payload.signal,
       });
-
     } catch (err) {
       emitError(socket, err instanceof Error ? err.message : "Signal relay failed");
     }
   });
 
-  // ============================================================
-  // disconnect
-  // Clean up when socket drops unexpectedly.
-  // ============================================================
+  // ── disconnect ────────────────────────────────────────────
+  // FIX: only handle meeting cleanup if socket was actually in a meeting
+  // prevents double-disconnect conflict with socketHandler.ts
   socket.on("disconnect", () => {
-    handleLeave(io, socket);
+    if (socket._meetingId) {
+      handleLeave(io, socket);
+    }
   });
 }
 
-// ================================================================
-// handleLeave — shared logic for leave + disconnect
-// ================================================================
-function handleLeave(io: SocketServer, socket: Socket): void {
+// ============================================================
+// handleLeave
+// ============================================================
+function handleLeave(io: SocketServer, socket: MeetingSocket): void {
   try {
-    const meetingId: string = (socket as any)._meetingId;
-    const userId: number = (socket as any)._userId;
+    const meetingId = socket._meetingId;
+    const userId    = socket._userId;
+    const fullName  = socket._fullName; // FIX: read before leaveMeeting removes them from map
+
     if (!meetingId || !userId) return;
 
     const { meeting, ended } = MeetingService.leaveMeeting(meetingId, userId);
     socket.leave(roomName(meetingId));
 
+    // Clear socket state
+    socket._meetingId = undefined;
+    socket._userId    = undefined;
+    socket._fullName  = undefined;
+
     if (ended) {
-      // Host left — notify everyone the meeting is over
       io.to(roomName(meetingId)).emit(MEETING_EVENTS.ENDED, {
         meetingId,
         endedAt: meeting.endedAt,
       });
       io.in(roomName(meetingId)).socketsLeave(roomName(meetingId));
     } else {
-      // Regular participant left
+      // FIX: use stored fullName instead of looking up from map
+      // (participant is already removed from map by leaveMeeting)
       socket.to(roomName(meetingId)).emit(MEETING_EVENTS.PARTICIPANT_LEFT, {
         userId,
-        fullName: meeting.participants.get(userId)?.fullName ?? "",
+        fullName: fullName ?? "",
       });
     }
-
   } catch {
-    // Participant may have already been removed — ignore silently
+    // Participant may have already been removed — ignore
   }
-}
-
-// ================================================================
-// findSocketByUserId — look up a socket instance by socketId
-// ================================================================
-function findSocketByUserId(
-  io: SocketServer,
-  meetingId: string,
-  socketId: string
-): Socket | undefined {
-  return io.sockets.sockets.get(socketId);
 }
