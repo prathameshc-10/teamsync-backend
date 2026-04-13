@@ -42,15 +42,36 @@ export const getMembers = async (orgId: number) => {
   });
 };
 
-export const addMember = async (orgId: number, userId: number) => {
-  const loginExists = await prisma.login.findUnique({ where: { userId } });
-  if (!loginExists) throw { status: 404, message: 'User not found' };
+export const addMember = async (orgId: number, email: string) => {
+  // Step 1 — find the login record by email
+  const loginExists = await prisma.login.findUnique({ 
+    where: { email } 
+  })
 
-  const alreadyMember = await prisma.user.findFirst({ where: { userId, orgId } });
-  if (alreadyMember) throw { status: 409, message: 'User already in this org' };
+  if (!loginExists) {
+    throw { status: 404, message: 'No user found with that email' }
+  }
 
-  return await prisma.user.create({ data: { userId, orgId } });
-};
+  // Step 2 — check if already a member of this org
+  const alreadyMember = await prisma.user.findFirst({
+    where: { 
+      userId: loginExists.userId, 
+      orgId 
+    }
+  })
+
+  if (alreadyMember) {
+    throw { status: 409, message: 'User is already a member of this organization' }
+  }
+
+  // Step 3 — add them
+  return await prisma.user.create({ 
+    data: { 
+      userId: loginExists.userId, 
+      orgId 
+    } 
+  })
+}
 
 export const deleteOrganization = async (orgId: number, userId: number) => {
   const org = await prisma.organization.findUnique({ where: { orgId: orgId, } });
