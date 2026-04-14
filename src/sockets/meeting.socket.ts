@@ -7,6 +7,7 @@ import { Server as SocketServer, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import { JWT_CONFIG } from "../config/jwt.config";
 import * as MeetingService from "../services/meeting.service";
+import * as OrgService from "../services/organization.services";
 import type { JwtPayload } from "../types/auth.types";
 import type {
   JoinMeetingPayload,
@@ -71,6 +72,23 @@ function emitError(socket: Socket, message: string): void {
   socket.emit(MEETING_EVENTS.ERROR, { message });
 }
 
+async function postOrgMeetingEndedMessage(meetingId: string): Promise<void> {
+  const meeting = await MeetingService.getMeeting(meetingId);
+  if (!meeting || meeting.sourceType !== "channel") return;
+
+  const organization = await prisma.organization.findUnique({
+    where: { orgId: meeting.sourceId },
+    select: { orgName: true },
+  });
+
+  const content = `MEETING_ENDED::${JSON.stringify({
+    meetingId,
+    orgName: organization?.orgName ?? null,
+  })}`;
+
+  await OrgService.sendOrgChatMessage(meeting.sourceId, meeting.hostUserId, content);
+}
+
 // ============================================================
 // registerMeetingSocketHandlers
 // ============================================================
@@ -96,7 +114,7 @@ export function registerMeetingSocketHandlers(
       });
       if (!login) return emitError(socket, "User not found");
 
-      const { meeting, participant } = MeetingService.joinMeeting(
+      const { meeting, participant } = await MeetingService.joinMeeting(
         meetingId,
         decoded.userId,
         login.fullName,
@@ -114,7 +132,7 @@ export function registerMeetingSocketHandlers(
         meetingId: meeting.meetingId,
         meetingLink: meeting.meetingLink,
         you: { ...participant, socketId: undefined },
-        participants: MeetingService.getParticipantList(meetingId),
+        participants: await MeetingService.getParticipantList(meetingId),
         presenterUserId: meeting.presenterUserId,
         chatHistory: meeting.chatMessages,
       });
@@ -130,16 +148,17 @@ export function registerMeetingSocketHandlers(
 
   // ── meeting:leave ─────────────────────────────────────────
   socket.on(MEETING_EVENTS.LEAVE, () => {
-    handleLeave(io, socket);
+    void handleLeave(io, socket);
   });
 
   // ── meeting:end ───────────────────────────────────────────
-  socket.on(MEETING_EVENTS.END, () => {
+  socket.on(MEETING_EVENTS.END, async () => {
     try {
       const { _meetingId: meetingId, _userId: userId } = socket;
       if (!meetingId || !userId) return emitError(socket, "Not in a meeting");
 
-      const meeting = MeetingService.endMeeting(meetingId, userId);
+      const meeting = await MeetingService.endMeeting(meetingId, userId);
+      await postOrgMeetingEndedMessage(meetingId);
 
       io.to(roomName(meetingId)).emit(MEETING_EVENTS.ENDED, {
         meetingId,
@@ -153,12 +172,12 @@ export function registerMeetingSocketHandlers(
   });
 
   // ── meeting:chat:send ─────────────────────────────────────
-  socket.on(MEETING_EVENTS.SEND_CHAT, (payload: SendChatPayload) => {
+  socket.on(MEETING_EVENTS.SEND_CHAT, async (payload: SendChatPayload) => {
     try {
       const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
-      const message = MeetingService.sendChatMessage(
+      const message = await MeetingService.sendChatMessage(
         payload.meetingId,
         userId,
         payload.content
@@ -173,12 +192,12 @@ export function registerMeetingSocketHandlers(
   });
 
   // ── meeting:presenter:transfer ────────────────────────────
-  socket.on(MEETING_EVENTS.TRANSFER_PRESENTER, (payload: TransferPresenterPayload) => {
+  socket.on(MEETING_EVENTS.TRANSFER_PRESENTER, async (payload: TransferPresenterPayload) => {
     try {
       const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
-      const { meeting, newPresenter } = MeetingService.transferPresenter(
+      const { meeting, newPresenter } = await MeetingService.transferPresenter(
         payload.meetingId,
         userId,
         payload.targetUserId
@@ -197,13 +216,13 @@ export function registerMeetingSocketHandlers(
   // FIX: now emits SCREEN_SHARE_STARTED / SCREEN_SHARE_STOPPED
   // in addition to PRESENTER_CHANGED so clients can react to
   // both the role change and the screen share state separately.
-  socket.on(MEETING_EVENTS.PRESENTER_ACTION, (payload: PresenterActionPayload) => {
+  socket.on(MEETING_EVENTS.PRESENTER_ACTION, async (payload: PresenterActionPayload) => {
     try {
       const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
       if (payload.action === "start") {
-        const meeting = MeetingService.startScreenShare(payload.meetingId, userId);
+        const meeting = await MeetingService.startScreenShare(payload.meetingId, userId);
         const presenter = meeting.participants.get(userId);
 
         // Tell everyone the presenter role changed
@@ -219,7 +238,7 @@ export function registerMeetingSocketHandlers(
         });
 
       } else {
-        const meeting = MeetingService.stopScreenShare(payload.meetingId, userId);
+        const meeting = await MeetingService.stopScreenShare(payload.meetingId, userId);
         const stoppedBy = meeting.participants.get(userId);
 
         // Tell everyone presenter is cleared
@@ -240,12 +259,12 @@ export function registerMeetingSocketHandlers(
   });
 
   // ── meeting:mute:self ─────────────────────────────────────
-  socket.on(MEETING_EVENTS.TOGGLE_SELF_MUTE, () => {
+  socket.on(MEETING_EVENTS.TOGGLE_SELF_MUTE, async () => {
     try {
       const { _meetingId: meetingId, _userId: userId } = socket;
       if (!meetingId || !userId) return emitError(socket, "Not in a meeting");
 
-      const participant = MeetingService.toggleSelfMute(meetingId, userId);
+      const participant = await MeetingService.toggleSelfMute(meetingId, userId);
 
       io.to(roomName(meetingId)).emit(MEETING_EVENTS.PARTICIPANT_MUTED, {
         userId,
@@ -258,12 +277,12 @@ export function registerMeetingSocketHandlers(
   });
 
   // ── meeting:mute:participant ──────────────────────────────
-  socket.on(MEETING_EVENTS.MUTE_PARTICIPANT, (payload: MuteParticipantPayload) => {
+  socket.on(MEETING_EVENTS.MUTE_PARTICIPANT, async (payload: MuteParticipantPayload) => {
     try {
       const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
-      const target = MeetingService.muteParticipant(
+      const target = await MeetingService.muteParticipant(
         payload.meetingId,
         userId,
         payload.targetUserId
@@ -280,12 +299,12 @@ export function registerMeetingSocketHandlers(
   });
 
   // ── meeting:mute:all ──────────────────────────────────────
-  socket.on(MEETING_EVENTS.MUTE_ALL, (payload: { meetingId: string }) => {
+  socket.on(MEETING_EVENTS.MUTE_ALL, async (payload: { meetingId: string }) => {
     try {
       const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
-      const muted = MeetingService.muteAll(payload.meetingId, userId);
+      const muted = await MeetingService.muteAll(payload.meetingId, userId);
 
       io.to(roomName(payload.meetingId)).emit(MEETING_EVENTS.ALL_MUTED, {
         mutedUserIds: muted.map((p) => p.userId),
@@ -297,12 +316,12 @@ export function registerMeetingSocketHandlers(
   });
 
   // ── meeting:remove:participant ────────────────────────────
-  socket.on(MEETING_EVENTS.REMOVE_PARTICIPANT, (payload: RemoveParticipantPayload) => {
+  socket.on(MEETING_EVENTS.REMOVE_PARTICIPANT, async (payload: RemoveParticipantPayload) => {
     try {
       const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
-      const removed = MeetingService.removeParticipant(
+      const removed = await MeetingService.removeParticipant(
         payload.meetingId,
         userId,
         payload.targetUserId
@@ -327,12 +346,12 @@ export function registerMeetingSocketHandlers(
   });
 
   // ── meeting:webrtc:signal ─────────────────────────────────
-  socket.on(MEETING_EVENTS.WEBRTC_SIGNAL, (payload: WebRTCSignalPayload) => {
+  socket.on(MEETING_EVENTS.WEBRTC_SIGNAL, async (payload: WebRTCSignalPayload) => {
     try {
       const userId = socket._userId;
       if (!userId) return emitError(socket, "Not authenticated");
 
-      const meeting = MeetingService.getMeeting(payload.meetingId);
+      const meeting = await MeetingService.getMeeting(payload.meetingId);
       if (!meeting) return emitError(socket, "Meeting not found");
 
       const targetParticipant = meeting.participants.get(payload.targetUserId);
@@ -352,7 +371,7 @@ export function registerMeetingSocketHandlers(
   // prevents double-disconnect conflict with socketHandler.ts
   socket.on("disconnect", () => {
     if (socket._meetingId) {
-      handleLeave(io, socket);
+      void handleLeave(io, socket);
     }
   });
 }
@@ -360,7 +379,7 @@ export function registerMeetingSocketHandlers(
 // ============================================================
 // handleLeave
 // ============================================================
-function handleLeave(io: SocketServer, socket: MeetingSocket): void {
+async function handleLeave(io: SocketServer, socket: MeetingSocket): Promise<void> {
   try {
     const meetingId = socket._meetingId;
     const userId    = socket._userId;
@@ -368,7 +387,7 @@ function handleLeave(io: SocketServer, socket: MeetingSocket): void {
 
     if (!meetingId || !userId) return;
 
-    const { meeting, ended } = MeetingService.leaveMeeting(meetingId, userId);
+    const { meeting, ended } = await MeetingService.leaveMeeting(meetingId, userId);
     socket.leave(roomName(meetingId));
 
     // Clear socket state
@@ -377,6 +396,8 @@ function handleLeave(io: SocketServer, socket: MeetingSocket): void {
     socket._fullName  = undefined;
 
     if (ended) {
+      await postOrgMeetingEndedMessage(meetingId);
+
       io.to(roomName(meetingId)).emit(MEETING_EVENTS.ENDED, {
         meetingId,
         endedAt: meeting.endedAt,

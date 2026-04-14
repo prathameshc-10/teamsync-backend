@@ -8,28 +8,29 @@ import type {
   Participant,
   MeetingChatMessage,
   MeetingResponse,
-  MeetingRole,
 } from "../types/meeting.types";
 import { MEETING_MESSAGES } from "../constants/messages";
+import prisma from "../config/prisma";
 
-// ── In-memory store — swap for Redis in production ───────────
-// key = meetingId
+// Runtime-only data for active socket sessions.
+// Persistent meeting existence/status is stored in PostgreSQL via Prisma.
 const meetings: Map<string, MeetingState> = new Map();
 
-const BASE_URL = process.env.APP_BASE_URL || "http://localhost:3000";
+const BASE_URL = process.env.APP_BASE_URL || "https://localhost:3000";
 
 // ================================================================
 // createMeeting
 // Called when a user starts a meeting from a channel or DM.
 // ================================================================
-export function createMeeting(
+function createRuntimeMeetingState(
+  meetingId: string,
   hostUserId: number,
   hostFullName: string,
   sourceType: "channel" | "dm",
   sourceId: number,
+  startedAt: Date,
   hostSocketId: string = ""
 ): MeetingState {
-  const meetingId = uuidv4();
   const meetingLink = `${BASE_URL}/meeting/${meetingId}`;
 
   const hostParticipant: Participant = {
@@ -42,7 +43,7 @@ export function createMeeting(
     joinedAt: new Date(),
   };
 
-  const state: MeetingState = {
+  return {
     meetingId,
     meetingLink,
     hostUserId,
@@ -51,26 +52,103 @@ export function createMeeting(
     participants: new Map([[hostUserId, hostParticipant]]),
     presenterUserId: null,
     chatMessages: [],
-    startedAt: new Date(),
+    startedAt,
     isActive: true,
   };
+}
 
-  meetings.set(meetingId, state);
+async function hydrateMeetingFromDb(meetingId: string): Promise<MeetingState | null> {
+  const persisted = await prisma.meeting.findUnique({
+    where: { id: meetingId },
+    include: {
+      host: {
+        select: { fullName: true },
+      },
+    },
+  });
+
+  if (!persisted) {
+    return null;
+  }
+
+  const state: MeetingState = {
+    meetingId: persisted.id,
+    meetingLink: `${BASE_URL}/meeting/${persisted.id}`,
+    hostUserId: persisted.hostUserId,
+    sourceType: persisted.sourceType as "channel" | "dm",
+    sourceId: persisted.sourceId,
+    participants: new Map(),
+    presenterUserId: null,
+    chatMessages: [],
+    startedAt: persisted.createdAt,
+    endedAt: persisted.endedAt ?? undefined,
+    isActive: persisted.status === "active",
+  };
+
+  if (state.isActive) {
+    const hostParticipant: Participant = {
+      userId: persisted.hostUserId,
+      fullName: persisted.host.fullName,
+      socketId: "",
+      role: "HOST",
+      isMuted: false,
+      isPresenter: false,
+      joinedAt: persisted.createdAt,
+    };
+    state.participants.set(persisted.hostUserId, hostParticipant);
+  }
+
+  meetings.set(persisted.id, state);
+  return state;
+}
+
+export async function createMeeting(
+  hostUserId: number,
+  hostFullName: string,
+  sourceType: "channel" | "dm",
+  sourceId: number,
+  hostSocketId: string = ""
+): Promise<MeetingState> {
+  const persisted = await prisma.meeting.create({
+    data: {
+      hostUserId,
+      sourceType,
+      sourceId,
+      status: "active",
+    },
+  });
+
+  const state = createRuntimeMeetingState(
+    persisted.id,
+    hostUserId,
+    hostFullName,
+    sourceType,
+    sourceId,
+    persisted.createdAt,
+    hostSocketId
+  );
+
+  meetings.set(persisted.id, state);
   return state;
 }
 
 // ================================================================
 // getMeeting
 // ================================================================
-export function getMeeting(meetingId: string): MeetingState | null {
-  return meetings.get(meetingId) ?? null;
+export async function getMeeting(meetingId: string): Promise<MeetingState | null> {
+  const runtime = meetings.get(meetingId);
+  if (runtime) {
+    return runtime;
+  }
+
+  return hydrateMeetingFromDb(meetingId);
 }
 
 // ================================================================
 // getMeetingOrThrow
 // ================================================================
-export function getMeetingOrThrow(meetingId: string): MeetingState {
-  const meeting = meetings.get(meetingId);
+export async function getMeetingOrThrow(meetingId: string): Promise<MeetingState> {
+  const meeting = await getMeeting(meetingId);
   if (!meeting) throw new Error(MEETING_MESSAGES.NOT_FOUND);
   if (!meeting.isActive) throw new Error(MEETING_MESSAGES.ENDED);
   return meeting;
@@ -80,13 +158,13 @@ export function getMeetingOrThrow(meetingId: string): MeetingState {
 // joinMeeting
 // Adds a participant to an existing active meeting.
 // ================================================================
-export function joinMeeting(
+export async function joinMeeting(
   meetingId: string,
   userId: number,
   fullName: string,
   socketId: string
-): { meeting: MeetingState; participant: Participant } {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<{ meeting: MeetingState; participant: Participant }> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   // If already in the meeting (reconnect), update socket id
   const existing = meeting.participants.get(userId);
@@ -113,11 +191,11 @@ export function joinMeeting(
 // leaveMeeting
 // Removes a participant. If host leaves, ends the meeting.
 // ================================================================
-export function leaveMeeting(
+export async function leaveMeeting(
   meetingId: string,
   userId: number
-): { meeting: MeetingState; ended: boolean } {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<{ meeting: MeetingState; ended: boolean }> {
+  const meeting = await getMeetingOrThrow(meetingId);
   const participant = meeting.participants.get(userId);
 
   if (!participant) throw new Error(MEETING_MESSAGES.NOT_PARTICIPANT);
@@ -133,6 +211,13 @@ export function leaveMeeting(
   if (userId === meeting.hostUserId) {
     meeting.isActive = false;
     meeting.endedAt = new Date();
+    await prisma.meeting.update({
+      where: { id: meetingId },
+      data: {
+        status: "ended",
+        endedAt: meeting.endedAt,
+      },
+    });
     return { meeting, ended: true };
   }
 
@@ -143,8 +228,8 @@ export function leaveMeeting(
 // endMeeting
 // Host explicitly ends the meeting.
 // ================================================================
-export function endMeeting(meetingId: string, requestingUserId: number): MeetingState {
-  const meeting = getMeetingOrThrow(meetingId);
+export async function endMeeting(meetingId: string, requestingUserId: number): Promise<MeetingState> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   if (meeting.hostUserId !== requestingUserId) {
     throw new Error(MEETING_MESSAGES.HOST_ONLY);
@@ -152,6 +237,13 @@ export function endMeeting(meetingId: string, requestingUserId: number): Meeting
 
   meeting.isActive = false;
   meeting.endedAt = new Date();
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: {
+      status: "ended",
+      endedAt: meeting.endedAt,
+    },
+  });
   return meeting;
 }
 
@@ -159,12 +251,12 @@ export function endMeeting(meetingId: string, requestingUserId: number): Meeting
 // transferPresenter
 // Host transfers presenter control to another participant.
 // ================================================================
-export function transferPresenter(
+export async function transferPresenter(
   meetingId: string,
   requestingUserId: number,
   targetUserId: number
-): { meeting: MeetingState; newPresenter: Participant } {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<{ meeting: MeetingState; newPresenter: Participant }> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   if (meeting.hostUserId !== requestingUserId) {
     throw new Error(MEETING_MESSAGES.HOST_ONLY);
@@ -189,11 +281,11 @@ export function transferPresenter(
 // startScreenShare
 // Only the current presenter (or host assigning themselves) can share.
 // ================================================================
-export function startScreenShare(
+export async function startScreenShare(
   meetingId: string,
   requestingUserId: number
-): MeetingState {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<MeetingState> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   const requester = meeting.participants.get(requestingUserId);
   if (!requester) throw new Error(MEETING_MESSAGES.NOT_PARTICIPANT);
@@ -222,11 +314,11 @@ export function startScreenShare(
 // stopScreenShare
 // Presenter stops sharing — clears presenter slot.
 // ================================================================
-export function stopScreenShare(
+export async function stopScreenShare(
   meetingId: string,
   requestingUserId: number
-): MeetingState {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<MeetingState> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   if (meeting.presenterUserId !== requestingUserId) {
     throw new Error(MEETING_MESSAGES.NOT_PRESENTER);
@@ -243,12 +335,12 @@ export function stopScreenShare(
 // muteParticipant
 // Host mutes a specific participant.
 // ================================================================
-export function muteParticipant(
+export async function muteParticipant(
   meetingId: string,
   requestingUserId: number,
   targetUserId: number
-): Participant {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<Participant> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   if (meeting.hostUserId !== requestingUserId) {
     throw new Error(MEETING_MESSAGES.HOST_ONLY);
@@ -265,11 +357,11 @@ export function muteParticipant(
 // muteAll
 // Host mutes every participant (not themselves).
 // ================================================================
-export function muteAll(
+export async function muteAll(
   meetingId: string,
   requestingUserId: number
-): Participant[] {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<Participant[]> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   if (meeting.hostUserId !== requestingUserId) {
     throw new Error(MEETING_MESSAGES.HOST_ONLY);
@@ -290,11 +382,11 @@ export function muteAll(
 // toggleSelfMute
 // Any participant mutes/unmutes themselves.
 // ================================================================
-export function toggleSelfMute(
+export async function toggleSelfMute(
   meetingId: string,
   userId: number
-): Participant {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<Participant> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   const participant = meeting.participants.get(userId);
   if (!participant) throw new Error(MEETING_MESSAGES.NOT_PARTICIPANT);
@@ -307,12 +399,12 @@ export function toggleSelfMute(
 // removeParticipant
 // Host removes a participant from the meeting.
 // ================================================================
-export function removeParticipant(
+export async function removeParticipant(
   meetingId: string,
   requestingUserId: number,
   targetUserId: number
-): Participant {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<Participant> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   if (meeting.hostUserId !== requestingUserId) {
     throw new Error(MEETING_MESSAGES.HOST_ONLY);
@@ -338,12 +430,12 @@ export function removeParticipant(
 // sendChatMessage
 // Any participant sends a message to the in-meeting chat sidebar.
 // ================================================================
-export function sendChatMessage(
+export async function sendChatMessage(
   meetingId: string,
   senderId: number,
   content: string
-): MeetingChatMessage {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<MeetingChatMessage> {
+  const meeting = await getMeetingOrThrow(meetingId);
 
   const sender = meeting.participants.get(senderId);
   if (!sender) throw new Error(MEETING_MESSAGES.NOT_PARTICIPANT);
@@ -381,10 +473,10 @@ export function updateParticipantSocket(
 // ================================================================
 // getParticipantList — safe (no socketId exposed)
 // ================================================================
-export function getParticipantList(
+export async function getParticipantList(
   meetingId: string
-): Omit<Participant, "socketId">[] {
-  const meeting = getMeetingOrThrow(meetingId);
+): Promise<Omit<Participant, "socketId">[]> {
+  const meeting = await getMeetingOrThrow(meetingId);
   return Array.from(meeting.participants.values()).map(
     ({ socketId: _s, ...rest }) => rest
   );

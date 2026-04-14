@@ -87,3 +87,38 @@ export const deleteOrganization = async (req: AuthRequest, res: Response): Promi
     res.status(err.status || 500).json({ error: err.message || "Internal server error" });
   }
 };
+
+export const getOrgChat = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { orgId } = req.params;
+    const numericOrgId = Number(orgId);
+
+    if (!orgId || Number.isNaN(numericOrgId)) {
+      res.status(400).json({ error: 'Valid Organization ID is required' });
+      return;
+    }
+
+    const chat = await orgService.getOrgChat(numericOrgId, req.user!.userId);
+    res.status(200).json({ data: chat });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message || ORG_MESSAGES.ERROR.INTERNAL_SERVER });
+  }
+};
+
+export const sendOrgChatMessage = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { orgId } = req.params;
+    const numericOrgId = Number(orgId);
+    const { content } = req.body as { content?: string };
+
+    if (!orgId || Number.isNaN(numericOrgId)) {
+      res.status(400).json({ error: 'Valid Organization ID is required' });
+      return;
+    }
+
+    const message = await orgService.sendOrgChatMessage(numericOrgId, req.user!.userId, content ?? '');
+    res.status(201).json({ data: message });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message || ORG_MESSAGES.ERROR.INTERNAL_SERVER });
+  }
+};
