@@ -43,7 +43,7 @@ export async function createMeeting(req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const meeting = MeetingService.createMeeting(
+    const meeting = await MeetingService.createMeeting(
       req.user.userId,
       login.fullName,
       sourceType,
@@ -75,7 +75,7 @@ export async function getMeeting(req: AuthRequest, res: Response): Promise<void>
     }
 
     const { meetingId } = req.params;
-    const meeting = MeetingService.getMeeting(meetingId as string);
+    const meeting = await MeetingService.getMeeting(meetingId as string);
 
     if (!meeting) {
       res.status(404).json({ success: false, message: MEETING_MESSAGES.NOT_FOUND });
@@ -105,7 +105,7 @@ export async function getParticipants(req: AuthRequest, res: Response): Promise<
     }
 
     const { meetingId } = req.params;
-    const participants = MeetingService.getParticipantList(meetingId as string);
+    const participants = await MeetingService.getParticipantList(meetingId as string);
 
     res.status(200).json({
       success: true,
